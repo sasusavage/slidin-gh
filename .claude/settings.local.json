@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv stitch_project_2907671802186858631/* .)",
+      "Bash(rmdir stitch_project_2907671802186858631)"
+    ]
+  }
+}
