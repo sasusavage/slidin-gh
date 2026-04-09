@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#e2dfde",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0edec",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "on-primary": "#ffffff",
+                    "background": "#fcf9f8",
+                    "error": "#ba1a1a",
+                    "outline": "#7e7576",
+                    "tertiary-fixed-dim": "#c6c6c6",
+                    "primary-container": "#3a0b00",
+                    "secondary": "#5f5e5e",
+                    "on-tertiary-fixed-variant": "#474747",
+                    "on-secondary-fixed-variant": "#474746",
+                    "tertiary-fixed": "#e2e2e2",
+                    "tertiary-container": "#1b1b1b",
+                    "inverse-on-surface": "#f3f0ef",
+                    "secondary-fixed": "#e5e2e1",
+                    "inverse-surface": "#313030",
+                    "on-background": "#1c1b1b",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface": "#fcf9f8",
+                    "outline-variant": "#cfc4c5",
+                    "surface-bright": "#fcf9f8",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#ffb59e",
+                    "on-surface-variant": "#4c4546",
+                    "on-secondary": "#ffffff",
+                    "surface-tint": "#ae3200",
+                    "tertiary": "#000000",
+                    "surface-container-high": "#ebe7e7",
+                    "on-primary-fixed-variant": "#852400",
+                    "primary": "#000000",
+                    "on-primary-container": "#ef4800",
+                    "on-surface": "#1c1b1b",
+                    "on-tertiary-container": "#848484",
+                    "surface-dim": "#dcd9d9",
+                    "surface-container-low": "#f6f3f2",
+                    "on-primary-fixed": "#3a0b00",
+                    "surface-variant": "#e5e2e1",
+                    "on-tertiary-fixed": "#1b1b1b",
+                    "primary-fixed": "#ffdbd0",
+                    "on-secondary-container": "#636262",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#ffb59e",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-secondary-fixed": "#1c1b1b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface">
+<!-- Top Navigation (Shell Suppressed/Simplified for Focused Detail View as per Rule) -->
+<header class="bg-white/70 dark:bg-black/70 backdrop-blur-xl fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button onclick="history.back()" class="hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined text-black dark:text-white">arrow_back</span>
+</button>
+</div>
+<a href="The_Showroom.html" class="text-2xl font-black tracking-widest text-black dark:text-white font-headline uppercase">Slidein GH</a>
+<div class="flex items-center gap-4">
+<a href="Checkout.html"><span class="material-symbols-outlined text-black dark:text-white">shopping_bag</span></a>
+</div>
+</header>
+<main class="pt-20 pb-32">
+<!-- Editorial Product Gallery -->
+<section class="relative px-0 md:px-12 lg:px-24">
+<div class="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 md:grid md:grid-cols-2 md:overflow-visible">
+<!-- Main Hero Image -->
+<div class="snap-center min-w-full md:min-w-0 md:col-span-2 relative aspect-[4/5] bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover p-8" data-alt="Close-up of a sleek, modern running shoe in vibrant orange against a minimalist soft gray background with architectural shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbmAxSENHgwIFY2SSooe6aPe8LQUoKbBwMEQC0jiWAqOkjkS9NfLrxK3jrablEh8T88QmwKcoJgEn5G-uUfSN4X2F7NHupoQ2BXIsoqDgzPwwM8iX2kW4ZqIqoEJ9DV52hfxHJ5el_CwSRbDvkPK3zbGApFFVaWkZuYeloK0xXbPT36D5XSTzDcRYpIPxRO0re7JVLiXEz1d2jKfU4uOvE8l4c_Ojt_cEdvHQ3vwzbTQijdIK9_qOb70GQmhUkdb8ihYTUMbhc624"/>
+<div class="absolute bottom-8 left-8">
+<span class="bg-primary text-on-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest">Limited Edition</span>
+</div>
+</div>
+<!-- Detail Shot 1 -->
+<div class="snap-center min-w-[85%] md:min-w-0 aspect-square bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Detailed macro shot of the high-performance mesh texture and stitching of an orange athletic sneaker." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9Fiqc80Xy29PIUODmGsYIO2J-UwthaV0sG0W8-uJ1BWSq2e40GCe-YInrPhktTn4tshlMXpA2JHDWP40mW5WiI1Ve7wwPuROAkH7biIuCKj0KtcZLfS-o9wfm2ET1YJIZUYeanDqINYsDTSgdZYOWU3ymDqgx2BWQghHgSlDPPsTq7rDkV6fgfoP1EZTUbwTH4NH5l2KWva2fPoADOOG-C8LpokSbjtfhpabIKQYg7R9LKb8B7u-POAcE01L_Uel6jYVxLcshs00"/>
+</div>
+<!-- Detail Shot 2 -->
+<div class="snap-center min-w-[85%] md:min-w-0 aspect-square bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Side profile of a minimalist orange shoe showing the responsive sole technology and clean design lines." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtp9N-XhGoherM3DcRhJluLRgBrejd_hxpLIvKAYhflUCqFdzGY1bjz1ys8-VgCqD2usC8u-evH_scnX9EuRqd9H6goPmdMvIzwiCwR4xWQSeFbLlsolo-YbqB9d9bnNc0yi9_PAVhD_uckBbgMz2-yRu9fgzyYiaNuuRu_oR2wwrihiKIbJ1fLxEiReoUNuS0j_OjFCqDpXQctwCAiadu_TZFlUGYlILdIYvcEIH-FDmRch9r8iASpxmdDdRS6KIgYgJ-kd0G5ag"/>
+</div>
+</div>
+</section>
+<!-- Product Information Content -->
+<section class="px-6 mt-12 max-w-2xl mx-auto md:max-w-4xl lg:max-w-6xl">
+<div class="flex flex-col md:grid md:grid-cols-12 md:gap-12">
+<!-- Branding & Title -->
+<div class="md:col-span-7">
+<div class="flex justify-between items-baseline mb-2">
+<p class="text-on-surface-variant font-label text-sm tracking-wider uppercase">V-Series / Performance</p>
+<p class="font-headline font-bold text-xl text-on-primary-container">£185.00</p>
+</div>
+<h1 class="font-headline text-4xl md:text-6xl font-extrabold tracking-tighter uppercase mb-6 leading-none">
+                        Kinetic Vapor <br/>Max-01
+                    </h1>
+<div class="space-y-6">
+<p class="text-on-surface-variant leading-relaxed text-lg">
+                            Engineered for the modern athlete. The Max-01 features our signature reactive foam core and a single-piece woven upper that adapts to the natural curvature of your foot. 
+                        </p>
+<div class="flex items-center gap-8 py-6 border-y border-outline-variant/20">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Weight</p>
+<p class="font-headline font-semibold">240g</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Stability</p>
+<p class="font-headline font-semibold">Neutral</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Drop</p>
+<p class="font-headline font-semibold">8mm</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Selectors & Interaction -->
+<div class="md:col-span-5 mt-10 md:mt-0 space-y-10">
+<!-- Color Selector -->
+<div>
+<h3 class="text-[11px] font-bold uppercase tracking-[0.2em] mb-4">Available Colorways</h3>
+<div class="flex gap-3">
+<button class="w-10 h-10 rounded-full bg-on-primary-container ring-2 ring-offset-2 ring-primary transition-all scale-110"></button>
+<button class="w-10 h-10 rounded-full bg-primary ring-1 ring-outline-variant/30 hover:scale-105 transition-transform"></button>
+<button class="w-10 h-10 rounded-full bg-surface-dim ring-1 ring-outline-variant/30 hover:scale-105 transition-transform"></button>
+<button class="w-10 h-10 rounded-full bg-secondary ring-1 ring-outline-variant/30 hover:scale-105 transition-transform"></button>
+</div>
+</div>
+<!-- Size Selector -->
+<div>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-[11px] font-bold uppercase tracking-[0.2em]">Select Size (UK)</h3>
+<button class="text-[10px] uppercase font-semibold border-b border-primary">Size Guide</button>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium">6</button>
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium">7</button>
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium">8</button>
+<button class="py-4 bg-primary text-on-primary rounded-lg font-bold">9</button>
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium">10</button>
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium text-on-surface-variant/40 line-through">11</button>
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium">12</button>
+<button class="py-4 border border-outline-variant/30 rounded-lg hover:border-primary transition-colors font-medium">13</button>
+</div>
+</div>
+<!-- Technical Specs Accordion (Editorial Style) -->
+<div class="pt-4">
+<details class="group border-t border-outline-variant/20 py-4" open="">
+<summary class="flex justify-between items-center list-none cursor-pointer">
+<span class="font-headline font-bold text-sm uppercase tracking-widest">Sustainability &amp; Origin</span>
+<span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="mt-4 text-sm text-on-surface-variant space-y-2 leading-relaxed">
+<p>Crafted using 40% recycled ocean plastics. Our manufacturing process in Northern Italy utilizes 100% renewable energy.</p>
+<p class="font-semibold text-on-surface">Designed in London. Assembled in Italy.</p>
+</div>
+</details>
+<details class="group border-t border-outline-variant/20 py-4">
+<summary class="flex justify-between items-center list-none cursor-pointer">
+<span class="font-headline font-bold text-sm uppercase tracking-widest">Delivery &amp; Returns</span>
+<span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="mt-4 text-sm text-on-surface-variant">
+<p>Free standard shipping on orders over £150. Easy 30-day returns policy.</p>
+</div>
+</details>
+</div>
+</div>
+</div>
+</section>
+<!-- Up-Sell / Gallery Grid (Asymmetric) -->
+<section class="mt-20 px-6 max-w-6xl mx-auto">
+<h2 class="font-headline text-2xl font-black uppercase tracking-tight mb-8">The Editorial Vision</h2>
+<div class="grid grid-cols-12 gap-4">
+<div class="col-span-8 h-[400px] bg-surface-container-low overflow-hidden rounded-xl">
+<img class="w-full h-full object-cover grayscale contrast-125" data-alt="Stylized editorial photograph of a model's feet in athletic shoes jumping over a minimalist concrete architectural feature." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5tcCjk7VABJ6SBRdLdJbH8Fpc9UCSk0p6DaHu_ukIcFnA3fxXWxgxQrAce7BH3OeCK_v5SQ11KgGK7_S4ZL0mOd4W34FqYf71bb0CUQEtDjlfaIgBMAxwtxgjE5BcXJEfbCB4A8Fa3HsTZIwi2On7MmGR92GZFkdTvGKMSm0EIJ7FTQ5TxQmMEPVIWLkpnf6Y0nCOeAzuGS_XMzBrWkMASk_VYZ9lV2riXLdisjj7UZIl2QNW7lyJbDYvMdDqUUoWIhlLy1XbQrY"/>
+</div>
+<div class="col-span-4 h-[400px] flex flex-col gap-4">
+<div class="flex-1 bg-on-primary-container rounded-xl flex items-center justify-center p-6 text-center">
+<p class="text-white font-headline font-bold italic text-lg leading-tight">"A masterclass in kinetic balance." — Vogue Tech</p>
+</div>
+<div class="flex-1 bg-surface-container-highest rounded-xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Aesthetic layout of technical shoe components and fabric samples on a clean white laboratory table." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIh7qe8XAIXj2R4x8DBmq4u9tqlwYQKRpA_zn8di_69mYWBXurH7Td7IVjXlXbTu6jexEj-1HmSzuq_nC54Q1KUACTMTyrZ2jeRUgRQPn4BlP_E0QR4YHvfFfMqefTMbpgNLWb8PlyKLFyqghqC5iwQrZuCHdqVO_aFl7eLzGlXWQEGF18qeq50MycLKnfaUf4rOG0MSwLfnpwPuxxLpkyvmlbYL-wpB400Uxg-f6NrbPzwJZ0Ur9zYtgsuZxEotk9iI2-3G5B2Ds"/>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom CTA Bar (Persistent) -->
+<div class="fixed bottom-0 left-0 w-full z-50 bg-white/70 dark:bg-black/70 backdrop-blur-xl px-6 py-6 shadow-[0_-12px_40px_-4px_rgba(0,0,0,0.06)]">
+<div class="max-w-4xl mx-auto flex items-center gap-4">
+<button id="fav-btn" onclick="this.classList.toggle('text-red-500');this.querySelector('span').style.fontVariationSettings=this.classList.contains('text-red-500')?'\'FILL\' 1':'\'FILL\' 0'" class="w-16 h-16 border border-outline-variant/30 rounded-lg flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<button onclick="window.location='Checkout.html'" class="flex-1 bg-on-primary-container text-on-primary h-16 rounded-lg font-headline font-extrabold text-lg uppercase tracking-widest flex items-center justify-center gap-3 transition-transform active:scale-[0.98]">
+<span>Add to Cart</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<script>
+// Size selector toggle
+document.querySelectorAll('.grid.grid-cols-4 button').forEach(btn => {
+  if (!btn.classList.contains('line-through')) {
+    btn.addEventListener('click', function() {
+      this.closest('.grid').querySelectorAll('button').forEach(b => {
+        b.classList.remove('bg-primary','text-on-primary','font-bold');
+        b.classList.add('border','border-outline-variant/30','font-medium');
+      });
+      this.classList.add('bg-primary','text-on-primary','font-bold');
+      this.classList.remove('border','border-outline-variant/30');
+    });
+  }
+});
+// Color selector toggle
+document.querySelectorAll('.flex.gap-3 button[class*="rounded-full"]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.closest('.flex.gap-3').querySelectorAll('button').forEach(b => {
+      b.classList.remove('ring-2','ring-offset-2','ring-primary','scale-110');
+      b.classList.add('ring-1','ring-outline-variant/30');
+    });
+    this.classList.add('ring-2','ring-offset-2','ring-primary','scale-110');
+    this.classList.remove('ring-1','ring-outline-variant/30');
+  });
+});
+</script>
+</body></html>
