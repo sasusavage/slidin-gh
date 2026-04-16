@@ -84,52 +84,131 @@
         }
     </style>
 <style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
+    body { min-height: max(884px, 100dvh); }
+    .header-icon { color: white; transition: color 0.3s; }
+    #site-header.scrolled { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); padding-top: 1rem; padding-bottom: 1rem; }
+    #site-header.scrolled .header-icon { color: black; }
+    #site-header.scrolled #header-search { background: rgba(0,0,0,0.06); color: black; }
+    #site-header.scrolled #header-search::placeholder { color: rgba(0,0,0,0.4); }
   </style>
+  <script>
+    window.addEventListener('scroll', function(){
+      document.getElementById('site-header').classList.toggle('scrolled', window.scrollY > 80);
+    });
+  </script>
   </head>
 <body class="bg-surface font-body text-on-surface antialiased">
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl flex justify-between items-center px-6 py-4 w-full">
+<header id="site-header" class="fixed top-0 w-full z-50 flex justify-between items-center px-6 py-5 w-full transition-all duration-300 bg-transparent">
 <div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-black cursor-pointer hover:opacity-70 transition-opacity" data-icon="menu">menu</span>
-<span class="font-headline font-black tracking-widest text-2xl text-black">Slidein GH</span>
+<span class="material-symbols-outlined header-icon cursor-pointer hover:opacity-70 transition-opacity" data-icon="menu">menu</span>
+<span class="font-headline font-black tracking-widest text-2xl header-icon">Slidein GH</span>
 </div>
 <div class="hidden md:flex flex-1 max-w-md mx-8">
 <div class="relative w-full">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
-<input class="w-full bg-surface-container border-none rounded-sm py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-on-primary-container/20" placeholder="Search the collection..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 header-icon text-sm opacity-70" data-icon="search">search</span>
+<input id="header-search" class="w-full bg-white/10 border-none rounded-sm py-2 pl-10 pr-4 text-sm placeholder-white/60 text-white focus:ring-2 focus:ring-white/30" placeholder="Search the collection..." type="text"/>
 </div>
 </div>
 <div class="flex items-center gap-4">
-<a href="Checkout.html"><span class="material-symbols-outlined text-black cursor-pointer hover:opacity-70 transition-opacity" data-icon="shopping_bag">shopping_bag</span></a>
+<a href="Checkout.html"><span class="material-symbols-outlined header-icon cursor-pointer hover:opacity-70 transition-opacity" data-icon="shopping_bag">shopping_bag</span></a>
 </div>
 </header>
 <!-- Content Canvas -->
-<main class="pt-20 pb-28">
+<main class="pb-28">
+
+<!-- ═══════════════════════════════════════════
+     HERO SECTION — full-screen image OR video
+     To swap media: edit #hero-img src  (image)
+                    or #hero-vid src    (video)
+     Set one to display:none to hide it.
+═══════════════════════════════════════════ -->
+<section class="relative w-full h-screen min-h-[600px] overflow-hidden" id="hero">
+
+  <!-- HERO IMAGE (replace src with your image path, e.g. assets/images/hero.jpg) -->
+  <img
+    id="hero-img"
+    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc3nT1qtkiRmbrlkx57Hooakbhsu7C_2lV9eOy3KpAFs8lYNWVdzMxbrUFhN3P7_kIJ119B2Bkff1JtLc5P0CcubVb1TJM33x6AJ7Wu-beTbKHtXVTFktWSR_VB_ulFoHLp64B1tjIY7N6np6q6LN9O6X3cZDQ2EW9O4iAM7FKA_VM2QTfLiAu0Z0JG_kf3Dz2dY5teVBxBbcGAChAAR2ttCQYZHXF08DfdN9olcVUkDk5Dz3G3DrXHPVYcqfYdkfGYi6T0jDeiJI"
+    alt="Hero"
+    class="absolute inset-0 w-full h-full object-cover"
+  />
+
+  <!-- HERO VIDEO (replace src with your video path, e.g. assets/videos/hero.mp4) — hidden by default -->
+  <video
+    id="hero-vid"
+    src=""
+    autoplay
+    muted
+    loop
+    playsinline
+    class="absolute inset-0 w-full h-full object-cover hidden"
+  ></video>
+
+  <!-- Dark gradient overlay -->
+  <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none"></div>
+
+  <!-- Campaign text + CTAs — centered like Balenciaga -->
+  <div class="absolute inset-0 flex flex-col items-center justify-end pb-20 px-6 text-center">
+    <p class="font-label text-white/70 uppercase tracking-[0.3em] text-xs mb-4">SS24 Collection</p>
+    <h1 class="font-headline font-black text-white uppercase tracking-tight leading-none text-5xl md:text-8xl mb-10">
+      The Velocity<br/>Campaign
+    </h1>
+    <div class="flex flex-col sm:flex-row gap-4">
+      <a href="Collections.html" class="px-10 py-4 border-2 border-white text-white font-bold uppercase tracking-widest text-sm hover:bg-white hover:text-black transition-all duration-200">
+        Discover Now
+      </a>
+      <a href="Collections.html" class="px-10 py-4 bg-white text-black font-bold uppercase tracking-widest text-sm hover:bg-white/80 transition-all duration-200">
+        Shop Now
+      </a>
+    </div>
+  </div>
+
+  <!-- Video controls (shown only when video is active) — bottom-right like Balenciaga -->
+  <div id="vid-controls" class="hidden absolute bottom-6 right-6 flex gap-2">
+    <button id="btn-play" onclick="heroPlayPause()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center hover:bg-white/40 transition">
+      <span class="material-symbols-outlined text-sm">pause</span>
+    </button>
+    <button id="btn-mute" onclick="heroMute()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center hover:bg-white/40 transition">
+      <span class="material-symbols-outlined text-sm">volume_off</span>
+    </button>
+  </div>
+</section>
+
+<script>
+// Switch hero to video automatically if src is set
+(function(){
+  var vid = document.getElementById('hero-vid');
+  var img = document.getElementById('hero-img');
+  var controls = document.getElementById('vid-controls');
+  if (vid.src && vid.src !== window.location.href) {
+    img.classList.add('hidden');
+    vid.classList.remove('hidden');
+    controls.classList.remove('hidden');
+    controls.classList.add('flex');
+  }
+})();
+
+function heroPlayPause() {
+  var vid = document.getElementById('hero-vid');
+  var icon = document.querySelector('#btn-play .material-symbols-outlined');
+  if (vid.paused) { vid.play(); icon.textContent = 'pause'; }
+  else { vid.pause(); icon.textContent = 'play_arrow'; }
+}
+function heroMute() {
+  var vid = document.getElementById('hero-vid');
+  var icon = document.querySelector('#btn-mute .material-symbols-outlined');
+  vid.muted = !vid.muted;
+  icon.textContent = vid.muted ? 'volume_off' : 'volume_up';
+}
+</script>
+
 <!-- Mobile Search (Visible only on small screens) -->
-<div class="px-6 mb-8 md:hidden">
+<div class="px-6 mt-8 mb-8 md:hidden">
 <div class="relative w-full">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
 <input class="w-full bg-surface-container-low border-none rounded-lg py-3 pl-10 text-sm" placeholder="Search silhouettes..." type="text"/>
 </div>
 </div>
-<!-- Hero Section -->
-<section class="px-6 mb-16">
-<div class="relative h-[500px] w-full rounded-xl overflow-hidden group">
-<img class="absolute inset-0 w-full h-full object-cover" data-alt="Close-up of a premium minimalist sneaker with clean lines and soft studio lighting against a neutral grey background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc3nT1qtkiRmbrlkx57Hooakbhsu7C_2lV9eOy3KpAFs8lYNWVdzMxbrUFhN3P7_kIJ119B2Bkff1JtLc5P0CcubVb1TJM33x6AJ7Wu-beTbKHtXVTFktWSR_VB_ulFoHLp64B1tjIY7N6np6q6LN9O6X3cZDQ2EW9O4iAM7FKA_VM2QTfLiAu0Z0JG_kf3Dz2dY5teVBxBbcGAChAAR2ttCQYZHXF08DfdN9olcVUkDk5Dz3G3DrXHPVYcqfYdkfGYi6T0jDeiJI"/>
-<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-<div class="absolute bottom-12 left-8 right-8">
-<p class="font-label text-white/80 uppercase tracking-widest text-xs mb-2">SS24 Editorial</p>
-<h1 class="font-headline text-5xl md:text-7xl font-extrabold text-white tracking-tighter mb-6">THE VELOCITY<br/>COLLECTION</h1>
-<a href="Collections.html" class="bg-on-primary-container text-on-primary px-8 py-4 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all scale-100 active:scale-95 inline-flex w-fit">
-                        Shop Now
-                        <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
-</a>
-</div>
-</div>
-</section>
 <!-- Category Circles -->
 <section class="px-6 mb-20">
 <h2 class="font-headline text-sm font-bold uppercase tracking-widest text-on-surface-variant mb-8 px-2">Browse Archives</h2>
