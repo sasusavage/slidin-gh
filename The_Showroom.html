@@ -76,33 +76,16 @@
         },
       }
     </script>
-<style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-    </style>
-<style>
-    body { min-height: max(884px, 100dvh); }
-    .header-icon { color: white; transition: color 0.3s; }
-    #site-header.scrolled { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); padding-top: 1rem; padding-bottom: 1rem; }
-    #site-header.scrolled .header-icon { color: black; }
-    #site-header.scrolled #header-search { background: rgba(0,0,0,0.06); color: black; }
-    #site-header.scrolled #header-search::placeholder { color: rgba(0,0,0,0.4); }
-  </style>
-  <script>
-    window.addEventListener('scroll', function(){
-      document.getElementById('site-header').classList.toggle('scrolled', window.scrollY > 80);
-    });
-  </script>
+<link rel="stylesheet" href="assets/css/main.css"/>
   </head>
 <body class="bg-surface font-body text-on-surface antialiased">
 <!-- TopAppBar -->
 <header id="site-header" class="fixed top-0 w-full z-50 flex justify-between items-center px-6 py-5 w-full transition-all duration-300 bg-transparent">
 <div class="flex items-center gap-4">
-<span class="material-symbols-outlined header-icon cursor-pointer hover:opacity-70 transition-opacity" data-icon="menu">menu</span>
-<span class="font-headline font-black tracking-widest text-2xl header-icon">Slidein GH</span>
+<button class="menu-btn" aria-label="Open menu">
+  <span class="material-symbols-outlined header-icon cursor-pointer hover:opacity-70 transition-opacity">menu</span>
+</button>
+<a href="The_Showroom.html" class="font-headline font-black tracking-widest text-2xl header-icon">Slidein GH</a>
 </div>
 <div class="hidden md:flex flex-1 max-w-md mx-8">
 <div class="relative w-full">
@@ -174,33 +157,6 @@
   </div>
 </section>
 
-<script>
-// Switch hero to video automatically if src is set
-(function(){
-  var vid = document.getElementById('hero-vid');
-  var img = document.getElementById('hero-img');
-  var controls = document.getElementById('vid-controls');
-  if (vid.src && vid.src !== window.location.href) {
-    img.classList.add('hidden');
-    vid.classList.remove('hidden');
-    controls.classList.remove('hidden');
-    controls.classList.add('flex');
-  }
-})();
-
-function heroPlayPause() {
-  var vid = document.getElementById('hero-vid');
-  var icon = document.querySelector('#btn-play .material-symbols-outlined');
-  if (vid.paused) { vid.play(); icon.textContent = 'pause'; }
-  else { vid.pause(); icon.textContent = 'play_arrow'; }
-}
-function heroMute() {
-  var vid = document.getElementById('hero-vid');
-  var icon = document.querySelector('#btn-mute .material-symbols-outlined');
-  vid.muted = !vid.muted;
-  icon.textContent = vid.muted ? 'volume_off' : 'volume_up';
-}
-</script>
 
 <!-- Mobile Search (Visible only on small screens) -->
 <div class="px-6 mt-8 mb-8 md:hidden">
@@ -288,8 +244,8 @@ function heroMute() {
 <h2 class="font-headline text-4xl font-extrabold tracking-tighter mb-4">JOIN THE EDITORIAL</h2>
 <p class="font-body text-on-surface-variant max-w-sm mx-auto mb-10 leading-relaxed">Early access to limited drops and curated archive pieces. No noise, just design.</p>
 <div class="flex flex-col md:flex-row gap-4 max-w-md mx-auto">
-<input class="flex-1 bg-surface-container border-none rounded-lg px-6 py-4 text-sm focus:ring-1 focus:ring-on-primary-container" placeholder="email address" type="email"/>
-<button onclick="this.previousElementSibling.value&&(this.textContent='Subscribed!',this.disabled=true,this.classList.add('opacity-70'))" class="bg-primary text-on-primary px-8 py-4 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-black/90 transition-colors">Subscribe</button>
+<input id="subscribe-email" class="flex-1 bg-surface-container border-none rounded-lg px-6 py-4 text-sm focus:ring-1 focus:ring-on-primary-container" placeholder="email address" type="email"/>
+<button id="subscribe-btn" class="bg-primary text-on-primary px-8 py-4 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-black/90 transition-colors">Subscribe</button>
 </div>
 </section>
 </main>
@@ -315,4 +271,34 @@ function heroMute() {
 <span class="font-inter text-[10px] font-medium tracking-wide uppercase mt-1">Account</span>
 </a>
 </nav>
+
+<!-- ── Mobile Side Menu ──────────────────────── -->
+<div id="menu-overlay" class="fixed inset-0 bg-black/50 z-[60]"></div>
+<aside id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white z-[70] flex flex-col shadow-2xl">
+  <div class="flex items-center justify-between px-6 py-5 border-b border-surface-container">
+    <span class="font-headline font-black tracking-widest text-xl">Slidein GH</span>
+    <button id="menu-close" aria-label="Close menu">
+      <span class="material-symbols-outlined text-black">close</span>
+    </button>
+  </div>
+  <nav class="flex-1 overflow-y-auto px-6 py-8 space-y-1">
+    <a href="The_Showroom.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">home</span> Showroom
+    </a>
+    <a href="Collections.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">grid_view</span> Collections
+    </a>
+    <a href="Product_Details.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">style</span> Product Details
+    </a>
+    <a href="Checkout.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">shopping_bag</span> Checkout
+    </a>
+    <a href="My_Account.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">person</span> My Account
+    </a>
+  </nav>
+</aside>
+
+<script src="assets/js/main.js"></script>
 </body></html>

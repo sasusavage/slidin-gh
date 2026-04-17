@@ -1,0 +1,91 @@
+/* ═══════════════════════════════════════════════
+   Slidein GH — main.css
+   All shared styles. Page-specific overrides
+   use scoped selectors at the bottom.
+═══════════════════════════════════════════════ */
+
+/* ── Scrollbars ─────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar,
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Google Material Symbols ────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ── Base ───────────────────────────────────── */
+body { min-height: max(884px, 100dvh); }
+
+/* ── Header: transparent → solid on scroll ─── */
+/* Used only on The_Showroom (has id="site-header") */
+.header-icon { color: white; transition: color 0.3s; }
+
+#site-header {
+  transition: background 0.35s ease, padding 0.35s ease,
+              box-shadow 0.35s ease;
+}
+#site-header.scrolled {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+#site-header.scrolled .header-icon   { color: black; }
+#site-header.scrolled #header-search {
+  background: rgba(0, 0, 0, 0.06);
+  color: black;
+}
+#site-header.scrolled #header-search::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+/* ── Mobile / Side Menu ─────────────────────── */
+#mobile-menu {
+  transform: translateX(-100%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#mobile-menu.open { transform: translateX(0); }
+
+#menu-overlay {
+  opacity: 0;
+  transition: opacity 0.32s ease;
+  pointer-events: none;
+}
+#menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Back button hover ──────────────────────── */
+.back-btn:hover .material-symbols-outlined { opacity: 0.6; }
+
+/* ── Favorite button fill toggle ────────────── */
+#fav-btn.loved .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  color: #ef4444;
+}
+
+/* ── Filter / selector buttons ──────────────── */
+.size-btn.active,
+.size-select-btn.active {
+  background: black;
+  color: white;
+  font-weight: 700;
+  border-color: black;
+}
+.color-btn.active,
+.color-select-btn.active {
+  outline: 2px solid black;
+  outline-offset: 3px;
+}
+
+/* ── Cart drawer ────────────────────────────── */
+#cart-overlay          { display: none; }
+#cart-overlay.open     { display: flex; }

@@ -77,31 +77,23 @@
         },
       }
     </script>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body { font-family: 'Inter', sans-serif; }
-        h1, h2, h3, .headline { font-family: 'Manrope', sans-serif; }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
+<link rel="stylesheet" href="assets/css/main.css"/>
   </head>
 <body class="bg-surface text-on-surface">
 <!-- TopAppBar Shell -->
 <nav class="fixed top-0 w-full z-50 bg-white/70 dark:bg-black/70 backdrop-blur-xl flex justify-between items-center px-6 py-4 w-full">
-<div class="flex items-center gap-4">
-<button class="hover:opacity-70 transition-opacity scale-95 transition-transform">
-<span class="material-symbols-outlined text-black dark:text-white" data-icon="menu">menu</span>
-</button>
+<div class="flex items-center gap-3">
+  <button class="menu-btn hover:opacity-70 transition-opacity" aria-label="Open menu">
+    <span class="material-symbols-outlined text-black dark:text-white">menu</span>
+  </button>
+  <a href="The_Showroom.html" class="back-btn flex items-center gap-1 text-black dark:text-white hover:opacity-70 transition-opacity" aria-label="Back to Showroom">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </a>
 </div>
 <a href="The_Showroom.html" class="font-manrope font-bold tracking-tighter uppercase text-2xl font-black tracking-widest text-black dark:text-white">Slidein GH</a>
 <div class="flex items-center gap-4">
-<a href="Checkout.html" class="hover:opacity-70 transition-opacity scale-95 transition-transform">
-<span class="material-symbols-outlined text-black dark:text-white" data-icon="shopping_bag">shopping_bag</span>
+<a href="Checkout.html" class="hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined text-black dark:text-white">shopping_bag</span>
 </a>
 </div>
 </nav>
@@ -120,7 +112,7 @@
 <div class="px-4 py-2 bg-surface-container-highest text-on-surface rounded-full text-xs font-label font-semibold flex items-center gap-2">
                         Performance <span class="material-symbols-outlined text-[14px]" data-icon="close">close</span>
 </div>
-<button class="text-on-primary-container text-xs font-bold uppercase tracking-widest px-2">Clear All</button>
+<button id="clear-filters" class="text-on-primary-container text-xs font-bold uppercase tracking-widest px-2">Clear All</button>
 </div>
 </div>
 </header>
@@ -131,34 +123,34 @@
 <section>
 <h3 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 border-b border-outline-variant/30 pb-2">Size (UK)</h3>
 <div class="grid grid-cols-4 gap-2">
-<button class="aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">6</button>
-<button class="aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">7</button>
-<button class="aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">8</button>
-<button class="aspect-square flex items-center justify-center bg-primary text-on-primary rounded-lg text-sm font-medium">9</button>
-<button class="aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">10</button>
-<button class="aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">11</button>
-<button class="aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">12</button>
+<button class="size-btn aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">6</button>
+<button class="size-btn aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">7</button>
+<button class="size-btn aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">8</button>
+<button class="size-btn active aspect-square flex items-center justify-center rounded-lg text-sm">9</button>
+<button class="size-btn aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">10</button>
+<button class="size-btn aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">11</button>
+<button class="size-btn aspect-square flex items-center justify-center border border-outline-variant/30 rounded-lg text-sm font-medium hover:border-primary transition-colors">12</button>
 </div>
 </section>
 <!-- Color Filter -->
 <section>
 <h3 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 border-b border-outline-variant/30 pb-2">Color Palette</h3>
 <div class="flex flex-wrap gap-3">
-<button class="w-8 h-8 rounded-full bg-black ring-2 ring-offset-2 ring-black"></button>
-<button class="w-8 h-8 rounded-full bg-white border border-outline-variant"></button>
-<button class="w-8 h-8 rounded-full bg-neutral-400"></button>
-<button class="w-8 h-8 rounded-full bg-[#ef4800]"></button>
-<button class="w-8 h-8 rounded-full bg-[#3a0b00]"></button>
+<button class="color-btn active w-8 h-8 rounded-full bg-black" aria-label="Black"></button>
+<button class="color-btn w-8 h-8 rounded-full bg-white border border-outline-variant" aria-label="White"></button>
+<button class="color-btn w-8 h-8 rounded-full bg-neutral-400" aria-label="Grey"></button>
+<button class="color-btn w-8 h-8 rounded-full bg-[#ef4800]" aria-label="Orange"></button>
+<button class="color-btn w-8 h-8 rounded-full bg-[#3a0b00]" aria-label="Brown"></button>
 </div>
 </section>
 <!-- Price Range -->
 <section>
 <h3 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 border-b border-outline-variant/30 pb-2">Price Range</h3>
 <div class="space-y-4">
-<input class="w-full accent-on-primary-container" max="500" min="0" type="range"/>
+<input id="price-slider" class="w-full accent-on-primary-container" max="500" min="0" value="500" type="range"/>
 <div class="flex justify-between text-xs font-label font-medium text-on-surface-variant">
 <span>£0</span>
-<span>£500</span>
+<span id="price-display">£500</span>
 </div>
 </div>
 </section>
@@ -170,8 +162,8 @@
 <div class="group">
 <a href="Product_Details.html" class="block relative aspect-[4/5] overflow-hidden bg-surface-container-lowest rounded-xl p-2 mb-4">
 <img alt="Kinetix Volt 1" class="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" data-alt="Modern lime green athletic sneaker isolated on a neutral background with sharp lighting and professional editorial style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJWCYjemKs4Xi-Ldk-_jtOD2DEOkDXTm4FI85Gmr2bzwNbgCBZKU5LU1kEpVsfX4txY0-UGHfFr1gm8cwSMqkaSRb6zYtabEe1qCxM5jelUOtv8lWam92lMpvv3ZFgEZudf5yeb4uqdmwl8ciM2UIpAIh9dMQofIKyxFeYz_OA-5AFcWx76I_CqnOTNRe8z7C0CACIH8iWvYFo7S3lc4AWGTUDL6ym3OOQ9W8ttN_GMs06449q8tNLylKKOH1KrSEKRyKIvw_G27Y"/>
-<button onclick="event.preventDefault();event.stopPropagation();this.innerHTML='<span class=\'material-symbols-outlined\'>check</span>';window.location='Checkout.html';" class="absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-<span class="material-symbols-outlined" data-icon="add">add</span>
+<button class="quick-add-btn absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300" aria-label="Add to cart">
+<span class="material-symbols-outlined">add</span>
 </button>
 </a>
 <a href="Product_Details.html" class="flex justify-between items-start">
@@ -186,8 +178,8 @@
 <div class="group">
 <a href="Product_Details.html" class="block relative aspect-[4/5] overflow-hidden bg-surface-container-lowest rounded-xl p-2 mb-4">
 <img alt="Kinetix Earth" class="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" data-alt="Luxury suede minimalist sneakers in sand color, high-angle studio shot with soft shadows and elegant aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjGKLLyaxa68tczUWqapwLJqMX61jke8A0VXuVB9bfXE2EYfr1uTUTDIX3-8jZ1aNQeh7XMVUxm3-LMnmroSi3AZhFrmZmBIF65yTDg-rGlL5tETBhyfr2y3pRUwg6EGX6CoW1jQJN5auPNuPwFjOPq1IdLlJhqsWUlJYLWxR-MFk7JLHYZdY76PTCAkynVryjOF59PnWGTFibbPx4SBXnqkbBmZHBBYGBKECPwjPBMJaKGoN7GORgPXqo8w8Qv3hLhvVOMMRPzBg"/>
-<button onclick="event.preventDefault();event.stopPropagation();this.innerHTML='<span class=\'material-symbols-outlined\'>check</span>';window.location='Checkout.html';" class="absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-<span class="material-symbols-outlined" data-icon="add">add</span>
+<button class="quick-add-btn absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300" aria-label="Add to cart">
+<span class="material-symbols-outlined">add</span>
 </button>
 </a>
 <a href="Product_Details.html" class="flex justify-between items-start">
@@ -202,8 +194,8 @@
 <div class="group">
 <a href="Product_Details.html" class="block relative aspect-[4/5] overflow-hidden bg-surface-container-lowest rounded-xl p-2 mb-4">
 <img alt="Kinetix Rosso" class="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" data-alt="Classic red performance running shoe with white branding, dynamic angle shot in studio with clean lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcIgX2yRzBY14qFKF5Q_CGs6cztqHgItTJLsdxmWggYltpPPOD_xM6Hw9XZSbpG9n14jfSHLDZ7Kw0We5QyLfh8RLedRMUWnKOCAN2eDAad299nb1OuMaEbpqPp7EqvlsoV6FhaRDZAnObNbDCxx0cNjk1cdkvJS9Sx3ERzpA0jAUXxcOGsEqmCkX_sTXhpyB77cccH-jwnLIhs9C1t9Of-HJ4_IZ15flkNVuBswm65HwS4aNk5g1LEfpTCwiU6RuI-1-IyknYNGE"/>
-<button onclick="event.preventDefault();event.stopPropagation();this.innerHTML='<span class=\'material-symbols-outlined\'>check</span>';window.location='Checkout.html';" class="absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-<span class="material-symbols-outlined" data-icon="add">add</span>
+<button class="quick-add-btn absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300" aria-label="Add to cart">
+<span class="material-symbols-outlined">add</span>
 </button>
 </a>
 <a href="Product_Details.html" class="flex justify-between items-start">
@@ -218,8 +210,8 @@
 <div class="group">
 <a href="Product_Details.html" class="block relative aspect-[4/5] overflow-hidden bg-surface-container-lowest rounded-xl p-2 mb-4">
 <img alt="Kinetix Stealth" class="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" data-alt="Triple black high-top sneaker with technical mesh and leather panels, dramatic moody lighting with deep shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChOL06Z9vgFAXPxSw9XZxZmGMtIYR7dtXJEY1nGCalRVWbb4ieAOsEURMezi2olIEWD9Lwa1wod_Y8ddjFakaB9SoS88SR6eJit6Pq2I6Y99wX5vROTc1ntPYnRgQivMdnI_0FOZpUMcQfP5DWtgnwPuNqWCfFrcFU5M_L89sM3bFjuoDgc1CkqXQPuj3P_3ZTVoU1gqkuPpRnt7bIPYhef4sR2nQkcFTQN0HSjfhwHjZHFyaFRwBZ4-tb2N22jimUKXS5K0-Jl3A"/>
-<button onclick="event.preventDefault();event.stopPropagation();this.innerHTML='<span class=\'material-symbols-outlined\'>check</span>';window.location='Checkout.html';" class="absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-<span class="material-symbols-outlined" data-icon="add">add</span>
+<button class="quick-add-btn absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300" aria-label="Add to cart">
+<span class="material-symbols-outlined">add</span>
 </button>
 </a>
 <a href="Product_Details.html" class="flex justify-between items-start">
@@ -234,8 +226,8 @@
 <div class="group">
 <a href="Product_Details.html" class="block relative aspect-[4/5] overflow-hidden bg-surface-container-lowest rounded-xl p-2 mb-4">
 <img alt="Kinetix Pastel" class="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" data-alt="Chunky sole women's sneaker with pastel lavender and pink accents, soft daylight lighting on white studio floor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXjC3s-Afns9FiLcSZn6P1yjxck11Qa4L4vt_ZBs2RkqVo6WZYkLat2t4goKoigO4rSE3PgXli0Phu_wUb_P7pRNLXUpuISoE3AdONBZA-oKbeOdPPOMFSHcf4_NlsbCZ_yDNKpeee67mENw0JdDv9raKXZ7wgE_n2DV39h6sm7ebPmstsLuayxP2PYTPxswZJeNIfBBU7mfixVrWwIlFbpU9bzKYhxP66YRhcKfKXV8BRta_z7JvuVbzgKcsYM3tQwVR7f_l6P0c"/>
-<button onclick="event.preventDefault();event.stopPropagation();this.innerHTML='<span class=\'material-symbols-outlined\'>check</span>';window.location='Checkout.html';" class="absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-<span class="material-symbols-outlined" data-icon="add">add</span>
+<button class="quick-add-btn absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300" aria-label="Add to cart">
+<span class="material-symbols-outlined">add</span>
 </button>
 </a>
 <a href="Product_Details.html" class="flex justify-between items-start">
@@ -250,8 +242,8 @@
 <div class="group">
 <a href="Product_Details.html" class="block relative aspect-[4/5] overflow-hidden bg-surface-container-lowest rounded-xl p-2 mb-4">
 <img alt="Kinetix Monochrome" class="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" data-alt="Classic canvas and leather low-top sneaker in white and black, clean commercial photography with soft fill light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzELDg89Vialz6W22xRqvbOV-InQL3a0VmMycny-1eYBWkx27iSIfBueRGKPgPt6bGn4xblv94EBkQ6ce1Sn8gZoMpLNvlCp0H-42bMplaVoGWAAZ1XJyegfIqYCuBqVPQccPwCU-vvRQXluX23q7H3q_WamOWG9gCGt4MvUBUZqUahdlS8pWCM_S_xVtOimBNjmdbjWtx7PxqC6ITSLhSPWB9S3a1TpvbmhAUI1WchLpWEsbwvbY4FNypwd_vrLKIdlUZrpcjX38"/>
-<button onclick="event.preventDefault();event.stopPropagation();this.innerHTML='<span class=\'material-symbols-outlined\'>check</span>';window.location='Checkout.html';" class="absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-<span class="material-symbols-outlined" data-icon="add">add</span>
+<button class="quick-add-btn absolute bottom-6 right-6 w-12 h-12 bg-on-primary-container text-on-primary rounded-full flex items-center justify-center shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300" aria-label="Add to cart">
+<span class="material-symbols-outlined">add</span>
 </button>
 </a>
 <a href="Product_Details.html" class="flex justify-between items-start">
@@ -284,26 +276,30 @@
 <span class="font-inter text-[10px] font-medium tracking-wide uppercase">Account</span>
 </a>
 </nav>
-<script>
-// Filter toggle for size buttons
-document.querySelectorAll('aside button').forEach(btn => {
-  if (!btn.classList.contains('text-on-primary-container')) {
-    btn.addEventListener('click', function() {
-      this.closest('section').querySelectorAll('button').forEach(b => {
-        b.classList.remove('bg-primary','text-on-primary');
-        b.classList.add('border','border-outline-variant/30');
-      });
-      this.classList.add('bg-primary','text-on-primary');
-      this.classList.remove('border','border-outline-variant/30');
-    });
-  }
-});
-// Color filter toggle
-document.querySelectorAll('aside button[class*="rounded-full"]').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('aside button[class*="rounded-full"]').forEach(b => b.classList.remove('ring-2','ring-offset-2','ring-black','ring-primary'));
-    this.classList.add('ring-2','ring-offset-2','ring-primary');
-  });
-});
-</script>
+<!-- ── Mobile Side Menu ──────────────────────── -->
+<div id="menu-overlay" class="fixed inset-0 bg-black/50 z-[60]"></div>
+<aside id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white z-[70] flex flex-col shadow-2xl">
+  <div class="flex items-center justify-between px-6 py-5 border-b border-surface-container">
+    <span class="font-headline font-black tracking-widest text-xl">Slidein GH</span>
+    <button id="menu-close" aria-label="Close menu">
+      <span class="material-symbols-outlined text-black">close</span>
+    </button>
+  </div>
+  <nav class="flex-1 overflow-y-auto px-6 py-8 space-y-1">
+    <a href="The_Showroom.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">home</span> Showroom
+    </a>
+    <a href="Collections.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest text-on-primary-container">
+      <span class="material-symbols-outlined text-xl">grid_view</span> Collections
+    </a>
+    <a href="Checkout.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">shopping_bag</span> Checkout
+    </a>
+    <a href="My_Account.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">person</span> My Account
+    </a>
+  </nav>
+</aside>
+
+<script src="assets/js/main.js"></script>
 </body></html>

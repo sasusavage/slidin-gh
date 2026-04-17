@@ -76,27 +76,19 @@
         },
       }
     </script>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body { font-family: 'Inter', sans-serif; }
-        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
+<link rel="stylesheet" href="assets/css/main.css"/>
   </head>
 <body class="bg-surface text-on-surface mb-24 md:mb-0">
 <!-- TopAppBar Shell -->
 <header class="bg-white/70 dark:bg-black/70 backdrop-blur-xl text-black dark:text-white fixed top-0 w-full z-50">
 <div class="flex justify-between items-center px-6 py-4 w-full">
-<div class="flex items-center gap-4">
-<button class="hover:opacity-70 transition-opacity scale-95 transition-transform">
-<span class="material-symbols-outlined">menu</span>
-</button>
+<div class="flex items-center gap-3">
+  <button class="menu-btn hover:opacity-70 transition-opacity" aria-label="Open menu">
+    <span class="material-symbols-outlined">menu</span>
+  </button>
+  <a href="The_Showroom.html" class="back-btn flex items-center gap-1 hover:opacity-70 transition-opacity" aria-label="Back to Showroom">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </a>
 </div>
 <a href="The_Showroom.html" class="text-2xl font-black tracking-widest font-manrope font-bold tracking-tighter uppercase">Slidein GH</a>
 <div class="flex items-center gap-4">
@@ -182,7 +174,7 @@
 </div>
 </div>
 <div class="md:col-span-1 flex justify-end">
-<button class="hover:text-on-primary-container transition-colors">
+<button class="order-chevron hover:text-on-primary-container transition-colors" aria-label="View order details">
 <span class="material-symbols-outlined">chevron_right</span>
 </button>
 </div>
@@ -207,7 +199,7 @@
 </div>
 </div>
 <div class="md:col-span-1 flex justify-end">
-<button class="hover:text-on-primary-container transition-colors">
+<button class="order-chevron hover:text-on-primary-container transition-colors" aria-label="View order details">
 <span class="material-symbols-outlined">chevron_right</span>
 </button>
 </div>
@@ -245,4 +237,30 @@
 <span class="material-symbols-outlined">person</span>
 </a>
 </nav>
+<!-- ── Mobile Side Menu ──────────────────────── -->
+<div id="menu-overlay" class="fixed inset-0 bg-black/50 z-[60]"></div>
+<aside id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white z-[70] flex flex-col shadow-2xl">
+  <div class="flex items-center justify-between px-6 py-5 border-b border-surface-container">
+    <span class="font-headline font-black tracking-widest text-xl">Slidein GH</span>
+    <button id="menu-close" aria-label="Close menu">
+      <span class="material-symbols-outlined text-black">close</span>
+    </button>
+  </div>
+  <nav class="flex-1 overflow-y-auto px-6 py-8 space-y-1">
+    <a href="The_Showroom.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">home</span> Showroom
+    </a>
+    <a href="Collections.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">grid_view</span> Collections
+    </a>
+    <a href="Checkout.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest hover:text-on-primary-container transition-colors">
+      <span class="material-symbols-outlined text-xl">shopping_bag</span> Checkout
+    </a>
+    <a href="My_Account.html" class="flex items-center gap-3 py-3 font-headline font-bold text-sm uppercase tracking-widest text-on-primary-container">
+      <span class="material-symbols-outlined text-xl">person</span> My Account
+    </a>
+  </nav>
+</aside>
+
+<script src="assets/js/main.js"></script>
 </body></html>
