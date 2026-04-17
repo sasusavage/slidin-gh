@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function () {
   initOrderChevrons();
   initSizeGuide();
   initPriceSlider();
+  initMobileFilters();
+  initLazyImages();
+  initFooter();
 
 });
 
@@ -318,12 +321,12 @@ function initSizeGuide() {
   if (!btn) return;
   btn.addEventListener('click', function () {
     var modal = document.getElementById('size-guide-modal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) modal.classList.add('visible');
   });
   var closeModal = document.getElementById('size-guide-close');
   if (closeModal) {
     closeModal.addEventListener('click', function () {
-      document.getElementById('size-guide-modal').classList.add('hidden');
+      document.getElementById('size-guide-modal').classList.remove('visible');
     });
   }
 }
@@ -340,4 +343,142 @@ function initPriceSlider() {
   slider.addEventListener('input', function () {
     display.textContent = '£' + slider.value;
   });
+}
+
+
+/* ─────────────────────────────────────────────
+   14. MOBILE FILTERS  (Collections page)
+   Requires: id="sidebar-filters", id="filter-overlay"
+             id="filter-open", id="filter-close"
+───────────────────────────────────────────── */
+function initMobileFilters() {
+  var sidebar  = document.getElementById('sidebar-filters');
+  var overlay  = document.getElementById('filter-overlay');
+  var openBtn  = document.getElementById('filter-open');
+  var closeBtn = document.getElementById('filter-close');
+
+  if (!sidebar || !openBtn) return;
+
+  function openFilters() {
+    sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeFilters() {
+    sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', openFilters);
+  if (closeBtn)  closeBtn.addEventListener('click', closeFilters);
+  if (overlay)   overlay.addEventListener('click', closeFilters);
+}
+
+
+/* ─────────────────────────────────────────────
+   15. LAZY IMAGES
+   Add class="lazy" and data-src="..." to <img>.
+   Swaps data-src → src when image enters viewport.
+───────────────────────────────────────────── */
+function initLazyImages() {
+  var imgs = document.querySelectorAll('img.lazy');
+  if (!imgs.length) return;
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var img = entry.target;
+          if (img.dataset.src) img.src = img.dataset.src;
+          img.classList.add('loaded');
+          io.unobserve(img);
+        }
+      });
+    }, { rootMargin: '200px' });
+    imgs.forEach(function (img) { io.observe(img); });
+  } else {
+    imgs.forEach(function (img) {
+      if (img.dataset.src) img.src = img.dataset.src;
+      img.classList.add('loaded');
+    });
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   16. SHARED FOOTER
+   Injects 4-column footer into id="site-footer"
+   on every page.
+───────────────────────────────────────────── */
+function initFooter() {
+  var slot = document.getElementById('site-footer');
+  if (!slot) return;
+
+  slot.innerHTML = [
+    '<footer class="site-footer">',
+    '  <div class="footer-inner">',
+    '    <div class="footer-grid">',
+
+    '      <!-- Brand column -->',
+    '      <div>',
+    '        <span class="footer-brand-name">Slidein GH</span>',
+    '        <p class="footer-tagline">Premium footwear engineered for the streets of Accra and beyond. Quality that moves with you.</p>',
+    '        <div class="footer-social">',
+    '          <a href="#" aria-label="Instagram">IG</a>',
+    '          <a href="#" aria-label="TikTok">TK</a>',
+    '          <a href="#" aria-label="Twitter">X</a>',
+    '          <a href="#" aria-label="Facebook">FB</a>',
+    '        </div>',
+    '      </div>',
+
+    '      <!-- Company -->',
+    '      <div>',
+    '        <h4 class="footer-heading">Company</h4>',
+    '        <ul class="footer-list">',
+    '          <li><a href="The_Showroom.html">The Showroom</a></li>',
+    '          <li><a href="Collections.html">Collections</a></li>',
+    '          <li><a href="#">About Us</a></li>',
+    '          <li><a href="#">Careers</a></li>',
+    '        </ul>',
+    '      </div>',
+
+    '      <!-- Resources -->',
+    '      <div>',
+    '        <h4 class="footer-heading">Resources</h4>',
+    '        <ul class="footer-list">',
+    '          <li><a href="#">Size Guide</a></li>',
+    '          <li><a href="#">Shipping Info</a></li>',
+    '          <li><a href="#">Returns</a></li>',
+    '          <li><a href="#">FAQs</a></li>',
+    '        </ul>',
+    '      </div>',
+
+    '      <!-- Contact -->',
+    '      <div>',
+    '        <h4 class="footer-heading">Contact</h4>',
+    '        <ul class="footer-list">',
+    '          <li><a href="mailto:hello@slideingh.com">hello@slideingh.com</a></li>',
+    '          <li><a href="tel:+233000000000">+233 000 000 000</a></li>',
+    '          <li><a href="#">Accra, Ghana</a></li>',
+    '        </ul>',
+    '        <h4 class="footer-heading">Account</h4>',
+    '        <ul class="footer-list">',
+    '          <li><a href="My_Account.html">My Orders</a></li>',
+    '          <li><a href="Checkout.html">Bag &amp; Checkout</a></li>',
+    '        </ul>',
+    '      </div>',
+
+    '    </div>',
+    '    <div class="footer-bottom">',
+    '      <span>&copy; 2025 Slidein GH. All rights reserved.</span>',
+    '      <div class="footer-legal">',
+    '        <a href="#">Privacy Policy</a>',
+    '        <a href="#">Terms of Use</a>',
+    '        <a href="#">Cookie Settings</a>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '</footer>'
+  ].join('\n');
 }

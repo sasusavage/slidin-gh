@@ -1,8 +1,16 @@
 /* ═══════════════════════════════════════════════
-   Slidein GH — main.css
-   All shared styles. Page-specific overrides
-   use scoped selectors at the bottom.
+   Slidein GH — main.css  v2.0
+   Mobile-first. Single source of truth for all
+   shared styles across every page.
 ═══════════════════════════════════════════════ */
+
+/* ── Reset ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
 
 /* ── Scrollbars ─────────────────────────────── */
 .no-scrollbar::-webkit-scrollbar,
@@ -13,79 +21,351 @@
 /* ── Google Material Symbols ────────────────── */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
 }
-.material-symbols-outlined.filled {
+.material-symbols-outlined.icon-filled {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* ── Base ───────────────────────────────────── */
-body { min-height: max(884px, 100dvh); }
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
 
-/* ── Header: transparent → solid on scroll ─── */
-/* Used only on The_Showroom (has id="site-header") */
+/* Transparent header (Showroom hero) */
 .header-icon { color: white; transition: color 0.3s; }
 
 #site-header {
-  transition: background 0.35s ease, padding 0.35s ease,
-              box-shadow 0.35s ease;
+  transition: background 0.35s ease, padding 0.35s ease, box-shadow 0.35s ease;
 }
 #site-header.scrolled {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.07);
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
 }
-#site-header.scrolled .header-icon   { color: black; }
-#site-header.scrolled #header-search {
-  background: rgba(0, 0, 0, 0.06);
-  color: black;
-}
-#site-header.scrolled #header-search::placeholder {
-  color: rgba(0, 0, 0, 0.4);
-}
+#site-header.scrolled .header-icon    { color: #0a0a0a; }
+#site-header.scrolled #header-search  { background: rgba(0,0,0,0.06); color: #0a0a0a; }
+#site-header.scrolled #header-search::placeholder { color: rgba(0,0,0,0.38); }
 
-/* ── Mobile / Side Menu ─────────────────────── */
+/* Solid header (all other pages) */
+.solid-header {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.07);
+}
+.solid-header .header-icon { color: #0a0a0a; }
+
+/* ═══════════════════════════════════════════════
+   MOBILE SIDE MENU
+═══════════════════════════════════════════════ */
 #mobile-menu {
   transform: translateX(-100%);
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 #mobile-menu.open { transform: translateX(0); }
 
 #menu-overlay {
   opacity: 0;
-  transition: opacity 0.32s ease;
+  transition: opacity 0.3s ease;
   pointer-events: none;
 }
-#menu-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
+#menu-overlay.open { opacity: 1; pointer-events: auto; }
+
+/* ═══════════════════════════════════════════════
+   BUTTON SYSTEM
+   .btn-primary   → solid black, white on hover
+   .btn-secondary → outline black
+   .btn-ghost     → outline white (on dark bg)
+═══════════════════════════════════════════════ */
+.btn-primary,
+.btn-secondary,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease,
+              border-color 0.18s ease, transform 0.12s ease;
+  text-decoration: none;
+  border: 2px solid transparent;
+}
+.btn-primary:active,
+.btn-secondary:active,
+.btn-ghost:active { transform: scale(0.97); }
+
+.btn-primary  { background: #0a0a0a; color: white; border-color: #0a0a0a; }
+.btn-primary:hover  { background: transparent; color: #0a0a0a; }
+
+.btn-secondary { background: transparent; color: #0a0a0a; border-color: #0a0a0a; }
+.btn-secondary:hover { background: #0a0a0a; color: white; }
+
+.btn-ghost  { background: transparent; color: white; border-color: white; }
+.btn-ghost:hover { background: white; color: #0a0a0a; }
+
+/* Full-width variant */
+.btn-block { width: 100%; justify-content: center; }
+
+/* ═══════════════════════════════════════════════
+   FILTER & SELECTOR BUTTONS
+═══════════════════════════════════════════════ */
+.size-btn,
+.size-select-btn {
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.size-btn.active,
+.size-select-btn.active {
+  background: #0a0a0a !important;
+  color: white !important;
+  font-weight: 700;
+  border-color: #0a0a0a !important;
+}
+.size-btn.unavailable,
+.size-select-btn.unavailable {
+  opacity: 0.3;
+  cursor: not-allowed;
+  text-decoration: line-through;
 }
 
-/* ── Back button hover ──────────────────────── */
-.back-btn:hover .material-symbols-outlined { opacity: 0.6; }
+.color-btn.active,
+.color-select-btn.active {
+  outline: 3px solid #0a0a0a;
+  outline-offset: 3px;
+}
 
-/* ── Favorite button fill toggle ────────────── */
+/* ═══════════════════════════════════════════════
+   MOBILE FILTER PANEL  (Collections page)
+═══════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  #sidebar-filters {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: min(360px, 92vw);
+    background: white;
+    z-index: 70;
+    overflow-y: auto;
+    padding: 1.5rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.12);
+    display: block !important;
+  }
+  #sidebar-filters.open { transform: translateX(0); }
+}
+
+#filter-overlay {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+#filter-overlay.open { opacity: 1; pointer-events: auto; }
+
+/* ═══════════════════════════════════════════════
+   BACK BUTTON
+═══════════════════════════════════════════════ */
+.back-btn { transition: opacity 0.2s; }
+.back-btn:hover { opacity: 0.55; }
+
+/* ═══════════════════════════════════════════════
+   FAVOURITE BUTTON
+═══════════════════════════════════════════════ */
+#fav-btn { transition: color 0.2s; }
 #fav-btn.loved .material-symbols-outlined {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   color: #ef4444;
 }
 
-/* ── Filter / selector buttons ──────────────── */
-.size-btn.active,
-.size-select-btn.active {
-  background: black;
+/* ═══════════════════════════════════════════════
+   CART DRAWER
+═══════════════════════════════════════════════ */
+#cart-overlay        { display: none; }
+#cart-overlay.open   { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   SIZE GUIDE MODAL
+═══════════════════════════════════════════════ */
+#size-guide-modal         { display: none; }
+#size-guide-modal.visible { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ */
+.hero-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
   color: white;
-  font-weight: 700;
-  border-color: black;
-}
-.color-btn.active,
-.color-select-btn.active {
-  outline: 2px solid black;
-  outline-offset: 3px;
+  font-size: clamp(2.4rem, 9vw, 7rem);
 }
 
-/* ── Cart drawer ────────────────────────────── */
-#cart-overlay          { display: none; }
-#cart-overlay.open     { display: flex; }
+/* ═══════════════════════════════════════════════
+   PRODUCT CARDS
+═══════════════════════════════════════════════ */
+.product-card { transition: transform 0.22s ease; }
+.product-card:hover { transform: translateY(-3px); }
+
+/* ═══════════════════════════════════════════════
+   LAZY IMAGES
+═══════════════════════════════════════════════ */
+img.lazy { opacity: 0; transition: opacity 0.45s ease; }
+img.lazy.loaded { opacity: 1; }
+
+/* ═══════════════════════════════════════════════
+   BOTTOM NAV — mobile only
+   Add .bottom-nav to every bottom nav element.
+   Hides automatically on md+.
+═══════════════════════════════════════════════ */
+.bottom-nav {
+  display: flex;
+}
+@media (min-width: 768px) {
+  .bottom-nav { display: none; }
+  /* Remove bottom padding reserved for nav on desktop */
+  main { padding-bottom: 2rem !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════ */
+.site-footer {
+  background: #0a0a0a;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4rem 1.5rem 2.5rem;
+  /* On mobile, leave space above bottom nav */
+  margin-bottom: 5rem;
+}
+@media (min-width: 768px) {
+  .site-footer { margin-bottom: 0; }
+}
+
+.footer-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  margin-bottom: 3rem;
+}
+@media (min-width: 540px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; }
+}
+
+.footer-brand-name {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 900;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  color: white;
+  text-transform: uppercase;
+  margin-bottom: 0.875rem;
+  display: block;
+}
+.footer-tagline {
+  font-size: 0.8rem;
+  line-height: 1.75;
+  margin-bottom: 1.5rem;
+  max-width: 22rem;
+}
+
+.footer-heading {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: white;
+  margin-bottom: 1.125rem;
+  margin-top: 0;
+}
+.footer-heading + .footer-heading,
+.footer-list + .footer-heading { margin-top: 1.75rem; }
+
+.footer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.25rem;
+}
+.footer-list li { margin-bottom: 0.625rem; }
+.footer-list a {
+  font-size: 0.825rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-list a:hover { color: white; }
+
+.footer-social {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.footer-social a {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 0.6rem;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.footer-social a:hover {
+  border-color: white;
+  color: white;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.28);
+}
+@media (min-width: 640px) {
+  .footer-bottom {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+.footer-bottom a {
+  color: rgba(255, 255, 255, 0.28);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-bottom a:hover { color: rgba(255, 255, 255, 0.7); }
+.footer-legal {
+  display: flex;
+  gap: 1.5rem;
+}

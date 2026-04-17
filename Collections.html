@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -116,9 +115,26 @@
 </div>
 </div>
 </header>
+<!-- Mobile filter toggle button -->
+<div class="flex items-center justify-between mb-6 lg:hidden">
+  <button id="filter-open" class="btn-secondary flex items-center gap-2 text-xs">
+    <span class="material-symbols-outlined text-base">tune</span> Filters
+  </button>
+  <span class="text-sm text-on-surface-variant font-body">6 Products</span>
+</div>
+<!-- Filter backdrop overlay -->
+<div id="filter-overlay" class="fixed inset-0 bg-black/50 z-[60]"></div>
+
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
 <!-- Sidebar Filters -->
-<aside class="lg:col-span-3 space-y-10">
+<aside id="sidebar-filters" class="lg:col-span-3 space-y-10">
+  <!-- Mobile filter header -->
+  <div class="flex items-center justify-between mb-6 lg:hidden">
+    <span class="font-headline font-bold text-lg uppercase tracking-widest">Filters</span>
+    <button id="filter-close" aria-label="Close filters">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
 <!-- Size Filter -->
 <section>
 <h3 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 border-b border-outline-variant/30 pb-2">Size (UK)</h3>
@@ -258,8 +274,9 @@
 </div>
 </div>
 </main>
+<div id="site-footer"></div>
 <!-- BottomNavBar Shell (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/70 dark:bg-black/70 backdrop-blur-xl shadow-[0_-12px_40px_-4px_rgba(0,0,0,0.06)] rounded-t-2xl">
+<nav class="bottom-nav fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/70 dark:bg-black/70 backdrop-blur-xl shadow-[0_-12px_40px_-4px_rgba(0,0,0,0.06)] rounded-t-2xl">
 <a href="The_Showroom.html" class="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 p-2 scale-90 transition-transform hover:text-orange-500 transition-colors">
 <span class="material-symbols-outlined" data-icon="home">home</span>
 <span class="font-inter text-[10px] font-medium tracking-wide uppercase">Showroom</span>
