@@ -4,7 +4,7 @@ from flask import (Blueprint, render_template, request, session,
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (Product, ProductImage, ProductVariant, Category,
-                         Order, Customer, AdminUser)
+                         Order, Customer, AdminUser, SiteSettings)
 from app import db
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -314,5 +314,48 @@ def category_save():
     cat.description = request.form.get('description', '')
     cat.position = int(request.form.get('position', 0))
     cat.is_active = bool(request.form.get('is_active'))
+
+    # Optional category image upload
+    img_file = request.files.get('image')
+    if img_file and allowed_file(img_file.filename):
+        ext = img_file.filename.rsplit('.', 1)[1].lower()
+        fname = f'cat_{uuid.uuid4()}.{ext}'
+        img_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
+        cat.image_url = f'/static/uploads/{fname}'
+
     db.session.commit()
     return redirect(url_for('admin.categories'))
+
+
+# ── CMS / Site Settings ───────────────────────────────────────────────────────
+
+@admin_bp.route('/cms', methods=['GET', 'POST'])
+@admin_required
+def cms():
+    if request.method == 'POST':
+        keys = [
+            'hero_style', 'hero_media_type', 'hero_media_url',
+            'hero_label', 'hero_title',
+            'hero_cta_primary_text', 'hero_cta_primary_url',
+            'hero_cta_secondary_text', 'hero_cta_secondary_url',
+            'announcement_bar_text', 'announcement_bar_active',
+            'site_name',
+        ]
+        for key in keys:
+            val = request.form.get(key, '').strip()
+            SiteSettings.set(key, val)
+
+        # Hero media file upload (optional — overrides hero_media_url if provided)
+        hero_file = request.files.get('hero_media_file')
+        if hero_file and allowed_file(hero_file.filename):
+            ext = hero_file.filename.rsplit('.', 1)[1].lower()
+            fname = f'hero_{uuid.uuid4()}.{ext}'
+            hero_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
+            SiteSettings.set('hero_media_url', f'/static/uploads/{fname}')
+
+        db.session.commit()
+        flash('Site settings saved.', 'success')
+        return redirect(url_for('admin.cms'))
+
+    settings = SiteSettings.get_all()
+    return render_template('admin/cms.html', s=settings)

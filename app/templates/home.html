@@ -16,16 +16,39 @@
 
 {% block content %}
 
+<!-- Announcement bar -->
+{% if hero.announcement_bar_active == 'true' and hero.announcement_bar_text %}
+<div class="announcement-bar">{{ hero.announcement_bar_text }}</div>
+{% endif %}
+
 <!-- Hero -->
-<section class="hero">
+{% set hero_style = hero.hero_style or 'balenciaga' %}
+<section class="hero hero--{{ hero_style }}">
+
+  {# Media element — image or video #}
+  {% if hero.hero_media_url %}
+    {% if hero.hero_media_type == 'video' %}
+    <video class="hero__media" autoplay muted loop playsinline>
+      <source src="{{ hero.hero_media_url }}"/>
+    </video>
+    {% else %}
+    <img class="hero__media" src="{{ hero.hero_media_url }}" alt="{{ hero.hero_title }}"/>
+    {% endif %}
+  {% else %}
   <img class="hero__media" src="{{ url_for('static', filename='img/hero.jpg') }}"
        alt="Campaign" onerror="this.style.display='none'"/>
+  {% endif %}
+
   <div class="hero__content">
-    <span class="hero__label">SS 2025 — Slidin GH</span>
-    <h1 class="hero__title">Campaign</h1>
+    {% if hero.hero_label %}<span class="hero__label">{{ hero.hero_label }}</span>{% endif %}
+    <h1 class="hero__title">{{ hero.hero_title or 'Campaign' }}</h1>
     <div class="hero__actions">
-      <a href="{{ url_for('store.shop') }}" class="btn btn--outline-white btn--lg">Discover Now</a>
-      <a href="{{ url_for('store.shop') }}" class="btn btn--white btn--lg">Shop Sneakers</a>
+      {% if hero.hero_cta_secondary_text %}
+      <a href="{{ hero.hero_cta_secondary_url or '/shop' }}" class="btn btn--outline-white btn--lg">{{ hero.hero_cta_secondary_text }}</a>
+      {% endif %}
+      {% if hero.hero_cta_primary_text %}
+      <a href="{{ hero.hero_cta_primary_url or '/shop' }}" class="btn btn--white btn--lg">{{ hero.hero_cta_primary_text }}</a>
+      {% endif %}
     </div>
   </div>
 </section>

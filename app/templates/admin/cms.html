@@ -1,0 +1,150 @@
+{% extends "admin/base.html" %}
+{% block title %}CMS — Site Settings{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">CMS / Site Settings</h1>
+
+<form method="post" enctype="multipart/form-data">
+
+  <!-- ── Announcement Bar ── -->
+  <section class="admin-card" style="margin-bottom:32px;">
+    <p class="admin-card__heading">Announcement Bar</p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;">
+      <div class="admin-field" style="margin:0;">
+        <label>Message</label>
+        <input type="text" name="announcement_bar_text"
+               value="{{ s.announcement_bar_text }}"
+               placeholder="Free delivery on orders over GH₵500"/>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px;">
+        <input type="checkbox" id="ann-active" name="announcement_bar_active"
+               value="true" {% if s.announcement_bar_active == 'true' %}checked{% endif %}/>
+        <label for="ann-active" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Active</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Hero Section ── -->
+  <section class="admin-card" style="margin-bottom:32px;">
+    <p class="admin-card__heading">Hero Section</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+      <div class="admin-field">
+        <label>Hero Style</label>
+        <select name="hero_style">
+          <option value="balenciaga" {% if s.hero_style == 'balenciaga' %}selected{% endif %}>Balenciaga — full-screen editorial</option>
+          <option value="puma" {% if s.hero_style == 'puma' %}selected{% endif %}>Puma — split text + media</option>
+        </select>
+      </div>
+
+      <div class="admin-field">
+        <label>Media Type</label>
+        <select name="hero_media_type" id="hero-media-type" onchange="toggleMediaFields()">
+          <option value="image" {% if s.hero_media_type == 'image' %}selected{% endif %}>Image</option>
+          <option value="video" {% if s.hero_media_type == 'video' %}selected{% endif %}>Video</option>
+        </select>
+      </div>
+
+      <div class="admin-field">
+        <label>Label <span style="font-weight:400;text-transform:none;">(small text above title)</span></label>
+        <input type="text" name="hero_label" value="{{ s.hero_label }}" placeholder="SS 2025 — Slidin GH"/>
+      </div>
+
+      <div class="admin-field">
+        <label>Title</label>
+        <input type="text" name="hero_title" value="{{ s.hero_title }}" placeholder="Campaign"/>
+      </div>
+
+      <div class="admin-field">
+        <label>Primary CTA Text</label>
+        <input type="text" name="hero_cta_primary_text" value="{{ s.hero_cta_primary_text }}" placeholder="Shop Sneakers"/>
+      </div>
+
+      <div class="admin-field">
+        <label>Primary CTA URL</label>
+        <input type="text" name="hero_cta_primary_url" value="{{ s.hero_cta_primary_url }}" placeholder="/shop"/>
+      </div>
+
+      <div class="admin-field">
+        <label>Secondary CTA Text</label>
+        <input type="text" name="hero_cta_secondary_text" value="{{ s.hero_cta_secondary_text }}" placeholder="Discover Now"/>
+      </div>
+
+      <div class="admin-field">
+        <label>Secondary CTA URL</label>
+        <input type="text" name="hero_cta_secondary_url" value="{{ s.hero_cta_secondary_url }}" placeholder="/shop"/>
+      </div>
+
+    </div>
+
+    <!-- Media upload / URL -->
+    <div style="margin-top:24px;border-top:1px solid #eee;padding-top:24px;">
+      <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px;">Hero Media</p>
+
+      {% if s.hero_media_url %}
+      <div style="margin-bottom:16px;">
+        {% if s.hero_media_type == 'video' %}
+        <video src="{{ s.hero_media_url }}" style="max-height:160px;max-width:100%;object-fit:cover;" muted loop autoplay playsinline></video>
+        {% else %}
+        <img src="{{ s.hero_media_url }}" style="max-height:160px;max-width:100%;object-fit:cover;" alt="Current hero"/>
+        {% endif %}
+        <p style="font-size:0.68rem;color:#888;margin-top:4px;">Current media</p>
+      </div>
+      {% endif %}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="admin-field" style="margin:0;">
+          <label>Upload New File <span id="media-type-hint" style="font-weight:400;text-transform:none;">(jpg/png/webp)</span></label>
+          <input type="file" name="hero_media_file" id="hero-media-file" accept="image/*,video/*"/>
+        </div>
+        <div class="admin-field" style="margin:0;">
+          <label>Or paste URL / static path</label>
+          <input type="text" name="hero_media_url" value="{{ s.hero_media_url }}"
+                 placeholder="/static/img/hero.jpg"/>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── General ── -->
+  <section class="admin-card" style="margin-bottom:32px;">
+    <p class="admin-card__heading">General</p>
+    <div class="admin-field" style="max-width:360px;">
+      <label>Site Name</label>
+      <input type="text" name="site_name" value="{{ s.site_name }}"/>
+    </div>
+  </section>
+
+  <button type="submit" class="btn btn--black">Save Settings</button>
+</form>
+
+<style>
+.admin-card {
+  border: 1px solid var(--black);
+  padding: 28px;
+}
+.admin-card__heading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+</style>
+
+<script>
+function toggleMediaFields() {
+  const type = document.getElementById('hero-media-type').value;
+  const hint = document.getElementById('media-type-hint');
+  const fileInput = document.getElementById('hero-media-file');
+  if (type === 'video') {
+    hint.textContent = '(mp4/webm)';
+    fileInput.accept = 'video/*';
+  } else {
+    hint.textContent = '(jpg/png/webp)';
+    fileInput.accept = 'image/*';
+  }
+}
+</script>
+{% endblock %}

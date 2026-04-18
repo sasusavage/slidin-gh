@@ -215,3 +215,57 @@ class AdminUser(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class SiteSettings(db.Model):
+    """Key-value CMS settings table. One row per setting key."""
+    __tablename__ = 'site_settings'
+    key = db.Column(db.String(100), primary_key=True)
+    value = db.Column(db.Text)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Defaults used when the row doesn't exist yet
+    DEFAULTS = {
+        'hero_style': 'balenciaga',        # balenciaga | puma
+        'hero_media_type': 'image',        # image | video
+        'hero_media_url': '',              # relative static path or absolute URL
+        'hero_label': 'SS 2025 — Slidin GH',
+        'hero_title': 'Campaign',
+        'hero_cta_primary_text': 'Shop Sneakers',
+        'hero_cta_primary_url': '/shop',
+        'hero_cta_secondary_text': 'Discover Now',
+        'hero_cta_secondary_url': '/shop',
+        'announcement_bar_text': '',
+        'announcement_bar_active': 'false',
+        'site_name': 'Slidin GH',
+    }
+
+    @classmethod
+    def get(cls, key):
+        row = cls.query.get(key)
+        if row:
+            return row.value
+        return cls.DEFAULTS.get(key, '')
+
+    @classmethod
+    def set(cls, key, value):
+        row = cls.query.get(key)
+        if row:
+            row.value = value
+            row.updated_at = datetime.utcnow()
+        else:
+            db.session.add(cls(key=key, value=value))
+
+    @classmethod
+    def get_all(cls):
+        rows = {r.key: r.value for r in cls.query.all()}
+        result = dict(cls.DEFAULTS)
+        result.update(rows)
+        return result
+
+    @classmethod
+    def seed_defaults(cls):
+        for key, value in cls.DEFAULTS.items():
+            if not cls.query.get(key):
+                db.session.add(cls(key=key, value=value))
+        db.session.commit()

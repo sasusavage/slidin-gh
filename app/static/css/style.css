@@ -223,6 +223,54 @@ ul, ol { list-style: none; }
   gap: 12px;
 }
 
+/* Puma style — split layout: text left, media right */
+.hero--puma {
+  min-height: 80svh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+}
+.hero--puma .hero__media {
+  position: relative;
+  opacity: 1;
+  grid-column: 2;
+  grid-row: 1;
+}
+.hero--puma .hero__content {
+  grid-column: 1;
+  grid-row: 1;
+  background: var(--black);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 2;
+}
+@media (max-width: 767px) {
+  .hero--puma {
+    grid-template-columns: 1fr;
+    min-height: 100svh;
+  }
+  .hero--puma .hero__media {
+    position: absolute;
+    opacity: 0.45;
+    grid-column: 1;
+  }
+  .hero--puma .hero__content {
+    grid-column: 1;
+  }
+}
+
+/* Announcement bar */
+.announcement-bar {
+  background: var(--black);
+  color: var(--white);
+  text-align: center;
+  padding: 10px 24px;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
 /* ═══════════════════════════════════════════
    BUTTONS
 ═══════════════════════════════════════════ */

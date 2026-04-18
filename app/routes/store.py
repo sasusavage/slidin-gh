@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, session, jsonify, redirect, url_for, abort
-from app.models import Product, Category, ProductVariant
+from app.models import Product, Category, ProductVariant, SiteSettings
 from app import db
 
 store_bp = Blueprint('store', __name__)
@@ -14,7 +14,8 @@ def home():
         ).order_by(Product.created_at.desc()).limit(6 - len(featured)).all()
         featured += extra
     categories = Category.query.filter_by(is_active=True).order_by(Category.position).all()
-    return render_template('home.html', featured=featured, categories=categories)
+    hero = SiteSettings.get_all()
+    return render_template('home.html', featured=featured, categories=categories, hero=hero)
 
 
 @store_bp.route('/shop')

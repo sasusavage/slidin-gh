@@ -15,7 +15,7 @@
           <td>{{ cat.position }}</td>
           <td>{% if cat.is_active %}✓{% else %}—{% endif %}</td>
           <td>
-            <button onclick="editCategory({{ cat|tojson|safe }})"
+            <button onclick="editCategory({{ {'id':cat.id,'name':cat.name,'description':cat.description or '','position':cat.position,'is_active':cat.is_active}|tojson|safe }})"
                     style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</button>
           </td>
         </tr>
