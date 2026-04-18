@@ -150,6 +150,17 @@
       </div>
     </a>
     {% endfor %}
+    {# Fill remaining cells so the grid always shows a full row of 4 #}
+    {% set count = featured | length %}
+    {% set cols = 4 %}
+    {% set remainder = count % cols %}
+    {% if remainder != 0 %}
+      {% for _ in range(cols - remainder) %}
+      <div class="product-card product-card--placeholder">
+        <div class="product-card__img-wrap"></div>
+      </div>
+      {% endfor %}
+    {% endif %}
   </div>
   <div style="padding:40px 24px 0;text-align:center;">
     <a href="{{ url_for('store.shop') }}" class="btn btn--outline">View All</a>

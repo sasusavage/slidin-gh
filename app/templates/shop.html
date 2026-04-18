@@ -73,6 +73,16 @@
     </div>
   </a>
   {% endfor %}
+  {# Placeholders to complete the last row #}
+  {% set count = products | length %}
+  {% set remainder = count % 4 %}
+  {% if remainder != 0 %}
+    {% for _ in range(4 - remainder) %}
+    <div class="product-card product-card--placeholder">
+      <div class="product-card__img-wrap"></div>
+    </div>
+    {% endfor %}
+  {% endif %}
 </div>
 {% else %}
 <div style="padding:96px 24px;text-align:center;">

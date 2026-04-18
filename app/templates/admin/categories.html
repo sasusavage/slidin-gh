@@ -69,6 +69,7 @@
 
     <form method="post" action="{{ url_for('admin.category_save') }}" enctype="multipart/form-data" id="cat-form">
       <input type="hidden" name="id" id="cat-id"/>
+      <input type="hidden" name="keep_image" id="cat-keep-image" value=""/>
 
       <div class="admin-field">
         <label>Name *</label>
@@ -140,6 +141,9 @@ function editCategory(cat) {
   document.getElementById('cat-pos').value   = cat.position;
   document.getElementById('cat-active').checked = cat.is_active;
 
+  // Pass the existing image URL so the server can keep it if no new file is uploaded
+  document.getElementById('cat-keep-image').value = cat.image_url || '';
+
   // Show current image preview
   const preview = document.getElementById('cat-img-preview');
   const img     = document.getElementById('cat-img-preview-el');
@@ -150,9 +154,9 @@ function editCategory(cat) {
     preview.style.display = 'none';
   }
 
-  // Reset file input & drop label
+  // Reset file input & drop label (a fresh upload is optional)
   document.getElementById('cat-img-file').value = '';
-  document.getElementById('drop-label').textContent = 'Drop image here or click to browse';
+  document.getElementById('drop-label').textContent = 'Drop new image here, or keep existing above';
   document.getElementById('drop-zone').style.borderColor = '#ccc';
 
   document.getElementById('cat-name').focus();
@@ -161,12 +165,13 @@ function editCategory(cat) {
 
 function resetForm() {
   document.getElementById('form-title').textContent = 'New Category';
-  document.getElementById('cat-id').value   = '';
-  document.getElementById('cat-name').value = '';
-  document.getElementById('cat-desc').value = '';
-  document.getElementById('cat-pos').value  = '0';
+  document.getElementById('cat-id').value        = '';
+  document.getElementById('cat-name').value      = '';
+  document.getElementById('cat-desc').value      = '';
+  document.getElementById('cat-pos').value       = '0';
   document.getElementById('cat-active').checked = true;
-  document.getElementById('cat-img-file').value = '';
+  document.getElementById('cat-keep-image').value = '';
+  document.getElementById('cat-img-file').value  = '';
   document.getElementById('cat-img-preview').style.display = 'none';
   document.getElementById('drop-label').textContent = 'Drop image here or click to browse';
   document.getElementById('drop-zone').style.borderColor = '#ccc';

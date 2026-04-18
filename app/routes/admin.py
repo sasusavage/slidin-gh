@@ -316,7 +316,7 @@ def category_save():
     cat.position = int(request.form.get('position', 0))
     cat.is_active = bool(request.form.get('is_active'))
 
-    # Optional category image upload (max 4 MB)
+    # Image handling: upload new file, or preserve existing via keep_image
     img_file = request.files.get('image')
     if img_file and img_file.filename:
         if not allowed_file(img_file.filename):
@@ -328,7 +328,7 @@ def category_save():
         if size > 4 * 1024 * 1024:
             flash('Image must be under 4 MB.', 'error')
             return redirect(url_for('admin.categories'))
-        # Delete old file if replacing
+        # Delete old file before replacing
         if cat.image_url:
             old_path = os.path.join(current_app.config['UPLOAD_FOLDER'],
                                     os.path.basename(cat.image_url))
@@ -338,6 +338,12 @@ def category_save():
         fname = f'cat_{uuid.uuid4()}.{ext}'
         img_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
         cat.image_url = f'/static/uploads/{fname}'
+    else:
+        # No new file — keep the existing image sent from the edit form
+        keep = request.form.get('keep_image', '').strip()
+        if keep:
+            cat.image_url = keep
+        # If keep is empty and no file, leave cat.image_url unchanged (new category has None)
 
     db.session.commit()
     return redirect(url_for('admin.categories'))
