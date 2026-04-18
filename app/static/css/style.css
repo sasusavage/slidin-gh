@@ -172,7 +172,7 @@ ul, ol { list-style: none; }
   margin-top: var(--nav-h);
 }
 .page--with-search {
-  margin-top: calc(var(--nav-h) + 48px);
+  margin-top: 0;
 }
 
 /* ═══════════════════════════════════════════
