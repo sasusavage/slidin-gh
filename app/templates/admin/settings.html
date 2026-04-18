@@ -144,9 +144,22 @@
     <p class="settings-card__title">Trust Features <span style="font-weight:400;text-transform:none;font-size:0.7rem;">(4 icons below hero)</span></p>
     <div class="settings-grid">
       {% for n in [1,2,3,4] %}
+      {% set cur_icon = s['feature'~n~'_icon'] %}
       <div style="border:1px solid #eee;padding:16px;">
         <p style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:12px;">Feature {{ n }}</p>
-        <div class="admin-field"><label>Icon class <a href="https://remixicon.com" target="_blank" style="font-weight:400;text-transform:none;">(remixicon)</a></label><input type="text" name="feature{{ n }}_icon" value="{{ s['feature'~n~'_icon'] }}" placeholder="ri-truck-line"/></div>
+
+        <!-- Icon picker -->
+        <div class="admin-field">
+          <label>Icon</label>
+          <input type="hidden" name="feature{{ n }}_icon" id="icon-val-{{ n }}" value="{{ cur_icon }}"/>
+          <div class="icon-picker-trigger" onclick="openIconPicker({{ n }})"
+               style="display:flex;align-items:center;gap:10px;border:1px solid #ccc;padding:10px 12px;cursor:pointer;user-select:none;background:#fff;">
+            <i id="icon-preview-{{ n }}" class="{{ cur_icon }}" style="font-size:1.3rem;color:#333;"></i>
+            <span id="icon-label-{{ n }}" style="font-size:0.75rem;color:#555;flex:1;">{{ cur_icon or 'Choose icon…' }}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5" style="width:16px;height:16px;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+
         <div class="admin-field"><label>Title</label><input type="text" name="feature{{ n }}_title" value="{{ s['feature'~n~'_title'] }}"/></div>
         <div class="admin-field"><label>Description</label><input type="text" name="feature{{ n }}_desc" value="{{ s['feature'~n~'_desc'] }}"/></div>
       </div>
@@ -156,6 +169,120 @@
 
   <button type="submit" class="btn btn--black">Save Homepage Settings</button>
 </form>
+
+<!-- ═══════════════ ICON PICKER MODAL ═══════════════ -->
+<div id="icon-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+  <div style="background:#fff;width:min(640px,95vw);max-height:80vh;display:flex;flex-direction:column;border:1px solid #000;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Choose Icon</p>
+      <button onclick="closeIconPicker()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;line-height:1;">×</button>
+    </div>
+    <div style="padding:12px 20px;border-bottom:1px solid #eee;">
+      <input id="icon-search" type="text" placeholder="Search icons…" oninput="filterIcons()"
+             style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:0.85rem;"/>
+    </div>
+    <div id="icon-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:4px;overflow-y:auto;padding:16px 20px;flex:1;"></div>
+  </div>
+</div>
+
+<style>
+.icon-cell {
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;cursor:pointer;
+  border:1px solid transparent;border-radius:2px;transition:background 0.1s,border-color 0.1s;
+}
+.icon-cell:hover { background:#f5f5f5;border-color:#ccc; }
+.icon-cell.selected { background:#000;color:#fff;border-color:#000; }
+.icon-cell i { font-size:1.3rem;pointer-events:none; }
+.icon-cell span { font-size:0.5rem;text-align:center;word-break:break-all;pointer-events:none;color:inherit;opacity:0.6; }
+</style>
+
+<script>
+// Full curated icon list grouped for sneaker / e-commerce store
+const ICONS = [
+  // Shipping & delivery
+  'ri-truck-line','ri-truck-fill','ri-ship-line','ri-flight-takeoff-line','ri-map-pin-line',
+  'ri-navigation-line','ri-compass-line',
+  // Shopping
+  'ri-shopping-bag-line','ri-shopping-bag-fill','ri-shopping-cart-line','ri-shopping-cart-2-line',
+  'ri-store-line','ri-store-2-line','ri-gift-line','ri-coupon-line','ri-price-tag-line',
+  'ri-wallet-line','ri-bank-card-line','ri-secure-payment-line',
+  // Trust / security
+  'ri-shield-check-line','ri-shield-line','ri-shield-star-line','ri-lock-line','ri-lock-password-line',
+  'ri-verified-badge-line','ri-award-line','ri-medal-line','ri-trophy-line','ri-star-line','ri-star-fill',
+  // Support / contact
+  'ri-customer-service-2-line','ri-customer-service-line','ri-headphone-line','ri-phone-line',
+  'ri-chat-1-line','ri-chat-smile-2-line','ri-whatsapp-line','ri-mail-line','ri-question-line',
+  'ri-information-line','ri-help-line',
+  // Returns / quality
+  'ri-refresh-line','ri-arrow-go-back-line','ri-recycle-line','ri-exchange-line',
+  'ri-checkbox-circle-line','ri-check-double-line','ri-thumb-up-line','ri-heart-line',
+  // Fashion / sneakers
+  'ri-t-shirt-line','ri-t-shirt-air-line','ri-footprint-line','ri-scissors-line',
+  'ri-palette-line','ri-brush-line','ri-contrast-line','ri-drop-line',
+  // People
+  'ri-user-line','ri-user-smile-line','ri-team-line','ri-group-line','ri-vip-crown-line',
+  'ri-vip-line','ri-user-star-line',
+  // Time / speed
+  'ri-time-line','ri-timer-line','ri-flashlight-line','ri-speed-line','ri-rocket-line',
+  // Location
+  'ri-map-pin-2-line','ri-road-map-line','ri-global-line','ri-earth-line',
+  // Misc
+  'ri-box-3-line','ri-box-3-fill','ri-luggage-cart-line','ri-barcode-line','ri-scan-line',
+  'ri-percent-line','ri-money-cny-circle-line','ri-money-dollar-circle-line',
+];
+
+let _pickerTarget = null;
+
+function openIconPicker(n) {
+  _pickerTarget = n;
+  renderIcons(ICONS);
+  document.getElementById('icon-search').value = '';
+  // Highlight current
+  const cur = document.getElementById('icon-val-' + n).value;
+  document.querySelectorAll('.icon-cell').forEach(el => {
+    el.classList.toggle('selected', el.dataset.icon === cur);
+  });
+  document.getElementById('icon-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('icon-search').focus(), 50);
+}
+
+function closeIconPicker() {
+  document.getElementById('icon-modal').style.display = 'none';
+}
+
+function renderIcons(list) {
+  const grid = document.getElementById('icon-grid');
+  grid.innerHTML = '';
+  const cur = _pickerTarget ? document.getElementById('icon-val-' + _pickerTarget).value : '';
+  list.forEach(icon => {
+    const cell = document.createElement('div');
+    cell.className = 'icon-cell' + (icon === cur ? ' selected' : '');
+    cell.dataset.icon = icon;
+    cell.innerHTML = `<i class="${icon}"></i><span>${icon.replace('ri-','').replace(/-line$/,'').replace(/-fill$/,'')}</span>`;
+    cell.onclick = () => selectIcon(icon);
+    grid.appendChild(cell);
+  });
+}
+
+function filterIcons() {
+  const q = document.getElementById('icon-search').value.toLowerCase().trim();
+  const filtered = q ? ICONS.filter(i => i.includes(q)) : ICONS;
+  renderIcons(filtered);
+}
+
+function selectIcon(icon) {
+  const n = _pickerTarget;
+  document.getElementById('icon-val-' + n).value = icon;
+  document.getElementById('icon-preview-' + n).className = icon;
+  document.getElementById('icon-label-' + n).textContent = icon;
+  closeIconPicker();
+}
+
+// Close on backdrop click
+document.getElementById('icon-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeIconPicker();
+});
+</script>
 
 <!-- ════════════════════ PAGES / ABOUT / CONTACT ════════════════════ -->
 {% elif tab == 'pages' %}

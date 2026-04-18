@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %}
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Inventory</h1>
+
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--black);border:1px solid var(--black);margin-bottom:32px;">
+  <div style="background:#fff;padding:20px 24px;">
+    <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.2em;color:#888;margin-bottom:4px;">Total Variants</p>
+    <p style="font-size:1.6rem;font-weight:700;">{{ total_variants }}</p>
+  </div>
+  <div style="background:#fff;padding:20px 24px;">
+    <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.2em;color:#888;margin-bottom:4px;">Low Stock (≤5)</p>
+    <p style="font-size:1.6rem;font-weight:700;color:{{ 'orange' if low_count else '#222' }};">{{ low_count }}</p>
+  </div>
+  <div style="background:#fff;padding:20px 24px;">
+    <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.2em;color:#888;margin-bottom:4px;">Out of Stock</p>
+    <p style="font-size:1.6rem;font-weight:700;color:{{ 'red' if out_count else '#222' }};">{{ out_count }}</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="get" style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+  <input name="q" type="text" value="{{ current_q }}" placeholder="Search product name…"
+         style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #ccc;font-size:0.85rem;"/>
+  <select name="stock" style="padding:9px 12px;border:1px solid #ccc;font-size:0.85rem;" onchange="this.form.submit()">
+    <option value="all"  {% if current_stock=='all'  %}selected{% endif %}>All stock</option>
+    <option value="out"  {% if current_stock=='out'  %}selected{% endif %}>Out of stock</option>
+    <option value="low"  {% if current_stock=='low'  %}selected{% endif %}>Low stock (≤5)</option>
+    <option value="good" {% if current_stock=='good' %}selected{% endif %}>Good stock (&gt;5)</option>
+  </select>
+  <button type="submit" class="btn btn--black" style="padding:9px 20px;">Filter</button>
+</form>
+
+<!-- Table -->
+<table class="data-table" id="inv-table">
+  <thead>
+    <tr>
+      <th>Product</th>
+      <th>Size</th>
+      <th>Color</th>
+      <th>SKU</th>
+      <th style="width:140px;">Stock</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in variants %}
+    <tr data-variant="{{ v.id }}">
+      <td>
+        <a href="{{ url_for('admin.product_edit', product_id=v.product_id) }}"
+           style="font-weight:600;">{{ v.product.name }}</a>
+      </td>
+      <td>{{ v.size or '—' }}</td>
+      <td>
+        {% if v.color_hex %}
+        <span style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="width:14px;height:14px;border-radius:50%;background:{{ v.color_hex }};border:1px solid #ddd;display:inline-block;"></span>
+          {{ v.color }}
+        </span>
+        {% else %}
+        {{ v.color or '—' }}
+        {% endif %}
+      </td>
+      <td style="font-size:0.78rem;color:#888;font-family:monospace;">{{ v.sku or '—' }}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="adjustQty('{{ v.id }}', -1)"
+                  style="width:26px;height:26px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:1rem;line-height:1;">−</button>
+          <input type="number" id="qty-{{ v.id }}" value="{{ v.quantity }}" min="0"
+                 style="width:56px;text-align:center;border:1px solid #ccc;padding:4px;font-size:0.85rem;"
+                 onchange="saveQty('{{ v.id }}', this.value)"
+                 onblur="saveQty('{{ v.id }}', this.value)"/>
+          <button onclick="adjustQty('{{ v.id }}', 1)"
+                  style="width:26px;height:26px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:1rem;line-height:1;">+</button>
+        </div>
+      </td>
+      <td id="status-{{ v.id }}">
+        {% if v.quantity == 0 %}
+        <span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:red;">Out</span>
+        {% elif v.quantity <= 5 %}
+        <span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:orange;">Low</span>
+        {% else %}
+        <span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:green;">Good</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align:center;padding:32px;color:#aaa;">No variants found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+function saveQty(id, val) {
+  const qty = Math.max(0, parseInt(val) || 0);
+  document.getElementById('qty-' + id).value = qty;
+  fetch('{{ url_for("admin.inventory_update") }}', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({variant_id: id, quantity: qty})
+  }).then(r => r.json()).then(data => {
+    if (data.success) updateStatus(id, qty);
+  });
+}
+
+function adjustQty(id, delta) {
+  const input = document.getElementById('qty-' + id);
+  saveQty(id, parseInt(input.value || 0) + delta);
+}
+
+function updateStatus(id, qty) {
+  const el = document.getElementById('status-' + id);
+  if (qty === 0)       el.innerHTML = '<span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:red;">Out</span>';
+  else if (qty <= 5)   el.innerHTML = '<span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:orange;">Low</span>';
+  else                 el.innerHTML = '<span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:green;">Good</span>';
+}
+</script>
+{% endblock %}

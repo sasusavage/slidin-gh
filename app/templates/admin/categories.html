@@ -2,42 +2,115 @@
 {% block title %}Categories{% endblock %}
 
 {% block content %}
-<div style="display:grid;grid-template-columns:1fr 360px;gap:40px;align-items:start;">
+<div style="display:grid;grid-template-columns:1fr 380px;gap:40px;align-items:start;">
+
+  <!-- ── List ── -->
   <div>
     <h1 class="admin-page-title">Categories</h1>
     <table class="data-table">
-      <thead><tr><th>Name</th><th>Slug</th><th>Position</th><th>Active</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width:56px;"></th>
+          <th>Name</th>
+          <th>Slug</th>
+          <th>Pos</th>
+          <th>Active</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         {% for cat in categories %}
         <tr>
-          <td><strong>{{ cat.name }}</strong></td>
-          <td style="color:var(--grey-3);">{{ cat.slug }}</td>
-          <td>{{ cat.position }}</td>
-          <td>{% if cat.is_active %}✓{% else %}—{% endif %}</td>
+          <!-- Thumbnail -->
           <td>
-            <button onclick="editCategory({{ {'id':cat.id,'name':cat.name,'description':cat.description or '','position':cat.position,'is_active':cat.is_active}|tojson|safe }})"
-                    style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</button>
+            {% if cat.image_url %}
+            <img src="{{ cat.image_url }}" alt="{{ cat.name }}"
+                 style="width:48px;height:48px;object-fit:cover;display:block;border:1px solid #eee;"/>
+            {% else %}
+            <div style="width:48px;height:48px;background:#f0f0f0;border:1px solid #eee;display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" style="width:20px;height:20px;">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            {% endif %}
+          </td>
+          <td><strong>{{ cat.name }}</strong>{% if cat.description %}<br/><span style="font-size:0.73rem;color:#888;">{{ cat.description[:60] }}{% if cat.description|length > 60 %}…{% endif %}</span>{% endif %}</td>
+          <td style="color:#888;font-size:0.8rem;">{{ cat.slug }}</td>
+          <td>{{ cat.position }}</td>
+          <td>{% if cat.is_active %}<span style="color:green;">✓</span>{% else %}<span style="color:#ccc;">—</span>{% endif %}</td>
+          <td>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button
+                onclick="editCategory({{ {'id':cat.id,'name':cat.name,'description':cat.description or '','position':cat.position,'is_active':cat.is_active,'image_url':cat.image_url or ''}|tojson|safe }})"
+                style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</button>
+              {% if cat.image_url %}
+              <form method="post" action="{{ url_for('admin.category_image_delete', cat_id=cat.id) }}"
+                    onsubmit="return confirm('Remove image for this category?')" style="display:inline;">
+                <button type="submit"
+                        style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:#e55;background:none;border:none;cursor:pointer;">
+                  Del Img
+                </button>
+              </form>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--grey-3);">No categories yet.</td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:#aaa;">No categories yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <div style="border:1px solid var(--black);padding:28px;">
+  <!-- ── Form ── -->
+  <div style="border:1px solid var(--black);padding:28px;position:sticky;top:24px;">
     <p id="form-title" style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:24px;">New Category</p>
-    <form method="post" action="{{ url_for('admin.category_save') }}">
+
+    <form method="post" action="{{ url_for('admin.category_save') }}" enctype="multipart/form-data" id="cat-form">
       <input type="hidden" name="id" id="cat-id"/>
+
       <div class="admin-field">
         <label>Name *</label>
         <input type="text" name="name" id="cat-name" required/>
       </div>
+
       <div class="admin-field">
         <label>Description</label>
         <textarea name="description" id="cat-desc" rows="2"></textarea>
       </div>
+
+      <!-- Image upload -->
+      <div class="admin-field">
+        <label>Category Image <span style="font-weight:400;text-transform:none;font-size:0.7rem;">(PNG/JPG/WEBP, max 4 MB)</span></label>
+
+        <!-- Preview of existing image when editing -->
+        <div id="cat-img-preview" style="display:none;margin-bottom:10px;position:relative;">
+          <img id="cat-img-preview-el" src=""
+               style="width:100%;max-height:140px;object-fit:cover;display:block;border:1px solid #eee;"/>
+          <p style="font-size:0.68rem;color:#888;margin-top:4px;">Current image — upload a new one to replace it</p>
+        </div>
+
+        <!-- File drop zone -->
+        <div id="drop-zone"
+             style="border:2px dashed #ccc;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.2s;"
+             ondragover="event.preventDefault();this.style.borderColor='#000'"
+             ondragleave="this.style.borderColor='#ccc'"
+             ondrop="handleDrop(event)"
+             onclick="document.getElementById('cat-img-file').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="width:28px;height:28px;margin:0 auto 8px;display:block;color:#aaa;">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <p id="drop-label" style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.1em;">
+            Drop image here or click to browse
+          </p>
+        </div>
+        <input type="file" name="image" id="cat-img-file" accept=".png,.jpg,.jpeg,.webp,.avif"
+               style="display:none;" onchange="previewFile(this)"/>
+      </div>
+
       <div style="display:flex;gap:16px;">
         <div class="admin-field" style="flex:1;">
           <label>Position</label>
@@ -48,7 +121,12 @@
           <label for="cat-active" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Active</label>
         </div>
       </div>
+
       <button type="submit" class="btn btn--black btn--full" style="margin-top:8px;">Save Category</button>
+      <button type="button" onclick="resetForm()"
+              style="margin-top:8px;width:100%;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;background:none;border:1px solid #ccc;padding:10px;cursor:pointer;">
+        Clear Form
+      </button>
     </form>
   </div>
 </div>
@@ -56,12 +134,85 @@
 <script>
 function editCategory(cat) {
   document.getElementById('form-title').textContent = 'Edit Category';
-  document.getElementById('cat-id').value   = cat.id;
-  document.getElementById('cat-name').value = cat.name;
-  document.getElementById('cat-desc').value = cat.description || '';
-  document.getElementById('cat-pos').value  = cat.position;
+  document.getElementById('cat-id').value    = cat.id;
+  document.getElementById('cat-name').value  = cat.name;
+  document.getElementById('cat-desc').value  = cat.description || '';
+  document.getElementById('cat-pos').value   = cat.position;
   document.getElementById('cat-active').checked = cat.is_active;
+
+  // Show current image preview
+  const preview = document.getElementById('cat-img-preview');
+  const img     = document.getElementById('cat-img-preview-el');
+  if (cat.image_url) {
+    img.src = cat.image_url;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+
+  // Reset file input & drop label
+  document.getElementById('cat-img-file').value = '';
+  document.getElementById('drop-label').textContent = 'Drop image here or click to browse';
+  document.getElementById('drop-zone').style.borderColor = '#ccc';
+
   document.getElementById('cat-name').focus();
+  document.getElementById('cat-form').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function resetForm() {
+  document.getElementById('form-title').textContent = 'New Category';
+  document.getElementById('cat-id').value   = '';
+  document.getElementById('cat-name').value = '';
+  document.getElementById('cat-desc').value = '';
+  document.getElementById('cat-pos').value  = '0';
+  document.getElementById('cat-active').checked = true;
+  document.getElementById('cat-img-file').value = '';
+  document.getElementById('cat-img-preview').style.display = 'none';
+  document.getElementById('drop-label').textContent = 'Drop image here or click to browse';
+  document.getElementById('drop-zone').style.borderColor = '#ccc';
+}
+
+function previewFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Validate type
+  const allowed = ['image/png','image/jpeg','image/webp','image/avif'];
+  if (!allowed.includes(file.type)) {
+    alert('Only PNG, JPG, WEBP, or AVIF files are allowed.');
+    input.value = '';
+    return;
+  }
+  // Validate size (4 MB)
+  if (file.size > 4 * 1024 * 1024) {
+    alert('Image must be under 4 MB.');
+    input.value = '';
+    return;
+  }
+
+  // Show drop zone preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('drop-label').textContent = file.name;
+    document.getElementById('drop-zone').style.borderColor = '#000';
+    // Also update the preview if editing
+    const img = document.getElementById('cat-img-preview-el');
+    img.src = e.target.result;
+    document.getElementById('cat-img-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor = '#ccc';
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const input = document.getElementById('cat-img-file');
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  previewFile(input);
 }
 </script>
 {% endblock %}

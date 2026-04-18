@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (Product, ProductImage, ProductVariant, Category,
                          Order, Customer, AdminUser, SiteSettings,
-                         Banner, Page, CouponCode)
+                         Banner, Page, CouponCode, ProductReview)
 from app import db
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -316,15 +316,44 @@ def category_save():
     cat.position = int(request.form.get('position', 0))
     cat.is_active = bool(request.form.get('is_active'))
 
-    # Optional category image upload
+    # Optional category image upload (max 4 MB)
     img_file = request.files.get('image')
-    if img_file and allowed_file(img_file.filename):
+    if img_file and img_file.filename:
+        if not allowed_file(img_file.filename):
+            flash('Invalid image type. Use PNG, JPG, WEBP or AVIF.', 'error')
+            return redirect(url_for('admin.categories'))
+        img_file.seek(0, 2)
+        size = img_file.tell()
+        img_file.seek(0)
+        if size > 4 * 1024 * 1024:
+            flash('Image must be under 4 MB.', 'error')
+            return redirect(url_for('admin.categories'))
+        # Delete old file if replacing
+        if cat.image_url:
+            old_path = os.path.join(current_app.config['UPLOAD_FOLDER'],
+                                    os.path.basename(cat.image_url))
+            if os.path.exists(old_path):
+                os.remove(old_path)
         ext = img_file.filename.rsplit('.', 1)[1].lower()
         fname = f'cat_{uuid.uuid4()}.{ext}'
         img_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
         cat.image_url = f'/static/uploads/{fname}'
 
     db.session.commit()
+    return redirect(url_for('admin.categories'))
+
+
+@admin_bp.route('/categories/<cat_id>/image/delete', methods=['POST'])
+@admin_required
+def category_image_delete(cat_id):
+    cat = Category.query.get_or_404(cat_id)
+    if cat.image_url:
+        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'],
+                                os.path.basename(cat.image_url))
+        if os.path.exists(old_path):
+            os.remove(old_path)
+        cat.image_url = None
+        db.session.commit()
     return redirect(url_for('admin.categories'))
 
 
@@ -579,3 +608,92 @@ def coupon_validate():
         label = f'GH₵{coupon.discount_value:.2f} off'
     return jsonify({'valid': True, 'discount': discount, 'label': label,
                     'coupon_id': coupon.id})
+
+# ── Inventory ─────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/inventory')
+@admin_required
+def inventory():
+    q = request.args.get('q', '').strip()
+    stock_filter = request.args.get('stock', 'all')  # all | low | out | good
+
+    query = ProductVariant.query.join(Product).filter(Product.status == 'active')
+
+    if q:
+        query = query.filter(Product.name.ilike(f'%{q}%'))
+
+    variants = query.order_by(Product.name).all()
+
+    if stock_filter == 'out':
+        variants = [v for v in variants if v.quantity == 0]
+    elif stock_filter == 'low':
+        variants = [v for v in variants if 0 < v.quantity <= 5]
+    elif stock_filter == 'good':
+        variants = [v for v in variants if v.quantity > 5]
+
+    total_variants = len(variants)
+    out_count = sum(1 for v in variants if v.quantity == 0)
+    low_count = sum(1 for v in variants if 0 < v.quantity <= 5)
+
+    return render_template('admin/inventory.html',
+                           variants=variants,
+                           current_q=q,
+                           current_stock=stock_filter,
+                           total_variants=total_variants,
+                           out_count=out_count,
+                           low_count=low_count)
+
+
+@admin_bp.route('/inventory/update', methods=['POST'])
+@admin_required
+def inventory_update():
+    """Inline stock update — called by JS fetch."""
+    variant_id = request.json.get('variant_id')
+    qty = request.json.get('quantity')
+    if variant_id is None or qty is None:
+        return jsonify({'error': 'Missing fields'}), 400
+    variant = ProductVariant.query.get_or_404(variant_id)
+    variant.quantity = max(0, int(qty))
+    db.session.commit()
+    return jsonify({'success': True, 'quantity': variant.quantity})
+
+
+# ── Reviews ───────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/reviews')
+@admin_required
+def reviews():
+    status_filter = request.args.get('status', 'all')
+    q = ProductReview.query.order_by(ProductReview.created_at.desc())
+    if status_filter != 'all':
+        q = q.filter_by(status=status_filter)
+    items = q.all()
+    counts = {
+        'all': ProductReview.query.count(),
+        'pending': ProductReview.query.filter_by(status='pending').count(),
+        'approved': ProductReview.query.filter_by(status='approved').count(),
+        'rejected': ProductReview.query.filter_by(status='rejected').count(),
+    }
+    return render_template('admin/reviews.html', reviews=items,
+                           current_status=status_filter, counts=counts)
+
+
+@admin_bp.route('/reviews/<review_id>/status', methods=['POST'])
+@admin_required
+def review_status(review_id):
+    review = ProductReview.query.get_or_404(review_id)
+    new_status = request.form.get('status')
+    if new_status in ('pending', 'approved', 'rejected'):
+        review.status = new_status
+        db.session.commit()
+    return redirect(url_for('admin.reviews',
+                            status=request.args.get('status', 'all')))
+
+
+@admin_bp.route('/reviews/<review_id>/delete', methods=['POST'])
+@admin_required
+def review_delete(review_id):
+    review = ProductReview.query.get_or_404(review_id)
+    db.session.delete(review)
+    db.session.commit()
+    return redirect(url_for('admin.reviews'))

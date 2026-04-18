@@ -209,6 +209,27 @@ class OrderItem(db.Model):
         return self.price * self.quantity
 
 
+class ProductReview(db.Model):
+    """Customer product reviews (submitted post-purchase, moderated by admin)."""
+    __tablename__ = 'product_reviews'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    product_id = db.Column(db.String(36), db.ForeignKey('products.id'), nullable=False)
+    order_id = db.Column(db.String(36), db.ForeignKey('orders.id'))
+    reviewer_name = db.Column(db.String(200), nullable=False)
+    reviewer_email = db.Column(db.String(200))
+    rating = db.Column(db.Integer, nullable=False)   # 1–5
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    status = db.Column(db.String(20), default='pending')  # pending | approved | rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product', backref=db.backref('reviews', lazy='dynamic'))
+
+    @property
+    def stars(self):
+        return '★' * self.rating + '☆' * (5 - self.rating)
+
+
 class AdminUser(db.Model):
     __tablename__ = 'admin_users'
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
