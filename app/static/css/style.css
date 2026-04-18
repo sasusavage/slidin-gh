@@ -1193,6 +1193,124 @@ ul, ol { list-style: none; }
 .admin-flash--success { background: #d1fae5; color: #065f46; }
 .admin-flash--error   { background: #fee2e2; color: #7f1d1d; }
 
+/* ── Admin Mobile Nav ─────────────────────── */
+.admin-topbar {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  background: var(--black);
+  color: var(--white);
+  padding: 0 16px;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.admin-topbar__title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.admin-hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.admin-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--white);
+}
+.admin-sidebar__close {
+  display: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.admin-nav-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 290;
+}
+.admin-nav-overlay.open { display: block; }
+
+/* Table scroll wrapper — applied via template */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+  /* Show topbar, hide sidebar by default */
+  .admin-topbar { display: flex; }
+  .admin-layout { grid-template-columns: 1fr; }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.25,0,0,1);
+  }
+  .admin-sidebar.open { transform: translateX(0); }
+  .admin-sidebar__close { display: block; }
+
+  .admin-main {
+    padding: 20px 14px;
+    /* account for sticky topbar */
+    padding-top: 20px;
+  }
+
+  /* Tables: horizontal scroll */
+  .data-table { min-width: 520px; }
+  .admin-main > div > .data-table,
+  .admin-main .data-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Two-column admin layouts → single column */
+  .admin-split-layout {
+    display: block !important;
+  }
+  /* Side-forms within split layout: remove sticky on mobile */
+  .admin-split-layout > div[style*="sticky"],
+  .admin-split-layout > div[style*="position:sticky"],
+  .admin-split-layout > div[style*="position: sticky"] {
+    position: static !important;
+    margin-top: 32px;
+  }
+
+  /* Settings tab content: stack two-col inline grids */
+  .settings-grid { grid-template-columns: 1fr !important; }
+  /* Force any remaining inline 1fr 1fr grids in admin to stack */
+  .admin-main div[style*="grid-template-columns:1fr 1fr"],
+  .admin-main div[style*="grid-template-columns: 1fr 1fr"] {
+    display: block !important;
+  }
+  .admin-main div[style*="grid-template-columns:1fr 1fr"] > *,
+  .admin-main div[style*="grid-template-columns: 1fr 1fr"] > * {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  /* Dashboard stat grid already 2-col on mobile via @media min-width:640 */
+}
+
 /* ═══════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════ */

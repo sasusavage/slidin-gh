@@ -9,10 +9,22 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
 </head>
 <body>
+<!-- Mobile nav overlay -->
+<div class="admin-nav-overlay" id="navOverlay" onclick="closeNav()"></div>
+
 <div class="admin-layout">
 
+  <!-- Mobile top bar -->
+  <div class="admin-topbar">
+    <button class="admin-hamburger" onclick="openNav()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="admin-topbar__title">Slidin GH · Admin</span>
+  </div>
+
   <!-- Sidebar -->
-  <aside class="admin-sidebar">
+  <aside class="admin-sidebar" id="adminSidebar">
+    <button class="admin-sidebar__close" onclick="closeNav()" aria-label="Close menu">✕</button>
     <div class="admin-sidebar__logo">Slidin GH · Admin</div>
     <nav>
       <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint=='admin.dashboard' }}">
@@ -81,5 +93,18 @@
   </div>
 
 </div>
+
+<script>
+function openNav() {
+  document.getElementById('adminSidebar').classList.add('open');
+  document.getElementById('navOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeNav() {
+  document.getElementById('adminSidebar').classList.remove('open');
+  document.getElementById('navOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+</script>
 </body>
 </html>
