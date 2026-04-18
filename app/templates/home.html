@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Slidin GH{% endblock %}
+
+{% block search_bar %}
+<div class="search-bar" style="margin-top:56px;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+  </svg>
+  <form action="{{ url_for('store.shop') }}" method="get" style="flex:1;display:flex;">
+    <input name="q" type="text" placeholder="What are you looking for?" autocomplete="off"/>
+  </form>
+</div>
+{% endblock %}
+
+{% block page_class %}--with-search{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+  <img class="hero__media" src="{{ url_for('static', filename='img/hero.jpg') }}"
+       alt="Campaign" onerror="this.style.display='none'"/>
+  <div class="hero__content">
+    <span class="hero__label">SS 2025 — Slidin GH</span>
+    <h1 class="hero__title">Campaign</h1>
+    <div class="hero__actions">
+      <a href="{{ url_for('store.shop') }}" class="btn btn--outline-white btn--lg">Discover Now</a>
+      <a href="{{ url_for('store.shop') }}" class="btn btn--white btn--lg">Shop Sneakers</a>
+    </div>
+  </div>
+</section>
+
+<!-- Category grid -->
+{% if categories %}
+<div class="category-grid">
+  {% for cat in categories %}
+  <a href="{{ url_for('store.shop', category=cat.slug) }}" class="category-tile">
+    {% if cat.image_url %}
+    <img class="category-tile__img" src="{{ cat.image_url }}" alt="{{ cat.name }}"/>
+    {% else %}
+    <div class="category-tile__img" style="background:#111;"></div>
+    {% endif %}
+    <span class="category-tile__label">{{ cat.name | upper }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Featured products -->
+<section class="section">
+  <span class="section-label px">New Arrivals</span>
+  <div class="product-grid" style="margin:0 1px;">
+    {% for product in featured %}
+    <a href="{{ url_for('store.product_detail', slug=product.slug) }}" class="product-card">
+      <div class="product-card__img-wrap">
+        <img class="product-card__img" src="{{ product.primary_image }}" alt="{{ product.name }}"
+             loading="lazy"/>
+        {% if product.compare_at_price %}
+        <span class="product-card__badge">Sale</span>
+        {% elif product.featured %}
+        <span class="product-card__badge">New</span>
+        {% endif %}
+      </div>
+      <div class="product-card__info">
+        <p class="product-card__name">{{ product.name }}</p>
+        <p class="product-card__price">
+          {{ product.price|currency }}
+          {% if product.compare_at_price %}
+          <span class="product-card__compare">{{ product.compare_at_price|currency }}</span>
+          {% endif %}
+        </p>
+        {% set colors = product.colors %}
+        {% if colors %}
+        <div class="product-card__colors">
+          {% for c in colors[:5] %}
+          <span class="color-swatch" style="background:{{ c.hex }}" title="{{ c.name }}"></span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <div style="padding:40px 24px 0;text-align:center;">
+    <a href="{{ url_for('store.shop') }}" class="btn btn--outline">View All</a>
+  </div>
+</section>
+
+{% endblock %}

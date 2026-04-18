@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+  <h1 class="admin-page-title" style="margin:0;">Customers <span style="font-size:1rem;color:var(--grey-3);">CRM</span></h1>
+  <form method="get" style="display:flex;gap:8px;">
+    <input type="text" name="q" value="{{ current_q }}" placeholder="Search name, phone, email…"
+           style="border:1px solid var(--grey-2);padding:8px 14px;font-size:0.78rem;width:240px;"/>
+    <button type="submit" class="btn btn--black" style="padding:8px 16px;">Search</button>
+    {% if current_q %}<a href="{{ url_for('admin.customers') }}" class="btn btn--outline" style="padding:8px 16px;">Clear</a>{% endif %}
+  </form>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr><th>Name</th><th>Phone</th><th>Email</th><th>City</th><th>Orders</th><th>Total Spent</th><th>Since</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for c in pagination.items %}
+    <tr>
+      <td><a href="{{ url_for('admin.customer_detail', customer_id=c.id) }}">{{ c.full_name }}</a></td>
+      <td>{{ c.phone }}</td>
+      <td style="color:var(--grey-3);">{{ c.email or '—' }}</td>
+      <td>{{ c.city or '—' }}</td>
+      <td style="font-weight:600;">{{ c.order_count }}</td>
+      <td>{{ c.total_spent|currency }}</td>
+      <td style="color:var(--grey-3);font-size:0.72rem;">{{ c.created_at.strftime('%d %b %Y') }}</td>
+      <td><a href="{{ url_for('admin.customer_detail', customer_id=c.id) }}" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;">View →</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--grey-3);">No customers yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}<a href="{{ url_for('admin.customers', page=pagination.prev_num, q=current_q) }}">←</a>{% endif %}
+  {% for p in pagination.iter_pages() %}
+    {% if p %}
+      {% if p==pagination.page %}<span class="current">{{ p }}</span>
+      {% else %}<a href="{{ url_for('admin.customers', page=p, q=current_q) }}">{{ p }}</a>{% endif %}
+    {% else %}<span>…</span>{% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}<a href="{{ url_for('admin.customers', page=pagination.next_num, q=current_q) }}">→</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

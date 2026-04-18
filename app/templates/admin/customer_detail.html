@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ customer.full_name }}{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('admin.customers') }}" style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.5;">← Customers</a>
+<div style="display:flex;align-items:baseline;gap:16px;margin:16px 0 32px;flex-wrap:wrap;">
+  <h1 class="admin-page-title" style="margin:0;">{{ customer.full_name }}</h1>
+  <span style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--grey-3);">
+    {{ customer.order_count }} order{{ 's' if customer.order_count!=1 }} · {{ customer.total_spent|currency }} spent
+  </span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:32px;align-items:start;">
+  <div>
+    <!-- Orders -->
+    <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--black);">Order History</p>
+    <table class="data-table">
+      <thead><tr><th>Order</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td><a href="{{ url_for('admin.order_detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+          <td>{{ order.items.count() }}</td>
+          <td><strong>{{ order.total|currency }}</strong></td>
+          <td><span class="badge badge--{{ order.status }}">{{ order.status_label }}</span></td>
+          <td style="color:var(--grey-3);">{{ order.created_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--grey-3);">No orders.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <div style="border:1px solid var(--black);padding:24px;margin-bottom:16px;">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:16px;">Contact</p>
+      <p style="font-size:0.85rem;font-weight:600;">{{ customer.full_name }}</p>
+      <p style="font-size:0.8rem;color:var(--grey-4);margin-top:6px;">{{ customer.phone }}</p>
+      {% if customer.email %}<p style="font-size:0.8rem;color:var(--grey-4);">{{ customer.email }}</p>{% endif %}
+      {% if customer.city %}
+      <p style="font-size:0.8rem;color:var(--grey-4);margin-top:6px;">
+        {{ customer.address_line1 or '' }}<br/>
+        {{ customer.city }}{% if customer.region %}, {{ customer.region }}{% endif %}
+      </p>
+      {% endif %}
+      <p style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--grey-3);margin-top:12px;">
+        Customer since {{ customer.created_at.strftime('%B %Y') }}
+      </p>
+    </div>
+
+    <!-- Notes -->
+    <div style="border:1px solid var(--grey-2);padding:24px;">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:12px;">CRM Notes</p>
+      <form method="post" action="{{ url_for('admin.customer_note', customer_id=customer.id) }}">
+        <textarea name="notes" rows="5"
+                  style="width:100%;border:1px solid var(--grey-2);padding:10px;font-size:0.82rem;resize:vertical;margin-bottom:10px;"
+                  placeholder="Add notes about this customer…">{{ customer.notes or '' }}</textarea>
+        <button type="submit" class="btn btn--black btn--full" style="padding:10px;">Save Notes</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

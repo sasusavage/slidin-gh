@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 360px;gap:40px;align-items:start;">
+  <div>
+    <h1 class="admin-page-title">Categories</h1>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Slug</th><th>Position</th><th>Active</th><th></th></tr></thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td><strong>{{ cat.name }}</strong></td>
+          <td style="color:var(--grey-3);">{{ cat.slug }}</td>
+          <td>{{ cat.position }}</td>
+          <td>{% if cat.is_active %}✓{% else %}—{% endif %}</td>
+          <td>
+            <button onclick="editCategory({{ cat|tojson|safe }})"
+                    style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--grey-3);">No categories yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="border:1px solid var(--black);padding:28px;">
+    <p id="form-title" style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:24px;">New Category</p>
+    <form method="post" action="{{ url_for('admin.category_save') }}">
+      <input type="hidden" name="id" id="cat-id"/>
+      <div class="admin-field">
+        <label>Name *</label>
+        <input type="text" name="name" id="cat-name" required/>
+      </div>
+      <div class="admin-field">
+        <label>Description</label>
+        <textarea name="description" id="cat-desc" rows="2"></textarea>
+      </div>
+      <div style="display:flex;gap:16px;">
+        <div class="admin-field" style="flex:1;">
+          <label>Position</label>
+          <input type="number" name="position" id="cat-pos" value="0" min="0"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:24px;">
+          <input type="checkbox" name="is_active" id="cat-active" value="1" checked/>
+          <label for="cat-active" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Active</label>
+        </div>
+      </div>
+      <button type="submit" class="btn btn--black btn--full" style="margin-top:8px;">Save Category</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function editCategory(cat) {
+  document.getElementById('form-title').textContent = 'Edit Category';
+  document.getElementById('cat-id').value   = cat.id;
+  document.getElementById('cat-name').value = cat.name;
+  document.getElementById('cat-desc').value = cat.description || '';
+  document.getElementById('cat-pos').value  = cat.position;
+  document.getElementById('cat-active').checked = cat.is_active;
+  document.getElementById('cat-name').focus();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Slidin GH{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}Premium sneakers and footwear. Accra, Ghana.{% endblock %}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────── -->
+<header class="nav">
+  <div class="nav__left">
+    <button class="nav__btn" id="menu-open" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="17" x2="21" y2="17"/>
+      </svg>
+    </button>
+  </div>
+
+  <a href="{{ url_for('store.home') }}" class="nav__logo">Slidin GH</a>
+
+  <div class="nav__right">
+    <a href="{{ url_for('store.shop') }}" class="nav__btn" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+      </svg>
+    </a>
+    <button class="nav__btn nav__cart-wrap" data-cart-open aria-label="Open bag">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      <span class="nav__cart-count" data-cart-count style="display:{{ 'flex' if cart_count > 0 else 'none' }}">{{ cart_count }}</span>
+    </button>
+  </div>
+</header>
+
+<!-- ── Search bar ─────────────────────────── -->
+{% block search_bar %}
+<div class="search-bar" style="margin-top:56px;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+  </svg>
+  <form action="{{ url_for('store.shop') }}" method="get" style="flex:1;display:flex;">
+    <input name="q" type="text" placeholder="What are you looking for?"
+           value="{{ request.args.get('q','') }}" autocomplete="off"/>
+  </form>
+</div>
+{% endblock %}
+
+<!-- ── Full-screen menu overlay ───────────── -->
+<div class="menu-overlay" id="menu-overlay" role="dialog" aria-modal="true">
+  <div class="menu-overlay__header">
+    <button class="nav__btn" id="menu-close" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <nav class="menu-overlay__nav">
+    <a href="{{ url_for('store.home') }}">Home</a>
+    <a href="{{ url_for('store.shop') }}">Shop</a>
+    <a href="{{ url_for('store.shop', gender='men') }}">Men</a>
+    <a href="{{ url_for('store.shop', gender='women') }}">Women</a>
+    <a href="{{ url_for('orders.track_order') }}">Track Order</a>
+  </nav>
+  <div class="menu-overlay__footer">
+    <a href="{{ url_for('orders.track_order') }}">Track Order</a>
+    <a href="#">Contact</a>
+  </div>
+</div>
+
+<!-- ── Cart drawer ────────────────────────── -->
+<div class="cart-overlay" id="cart-overlay"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-drawer__header">
+    <span class="cart-drawer__title">Your Bag (<span data-cart-count>{{ cart_count }}</span>)</span>
+    <button class="nav__btn" id="cart-close" aria-label="Close bag">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="cart-drawer__body" id="cart-body">
+    {% set cart_items = session.get('cart', []) %}
+    {% if cart_items %}
+      {% for item in cart_items %}
+      <div class="cart-item">
+        <img class="cart-item__img" src="{{ item.image }}" alt="{{ item.name }}"/>
+        <div>
+          <p class="cart-item__name">{{ item.name }}</p>
+          <p class="cart-item__meta">
+            {% if item.size %}{{ item.size }}{% endif %}
+            {% if item.size and item.color %} · {% endif %}
+            {% if item.color %}{{ item.color }}{% endif %}
+          </p>
+          <div class="cart-item__qty">
+            <button data-qty-key="{{ item.key }}" data-delta="-1">−</button>
+            <span data-qty-display>{{ item.quantity }}</span>
+            <button data-qty-key="{{ item.key }}" data-delta="1">+</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+          <span class="cart-item__price">{{ (item.price * item.quantity)|currency }}</span>
+          <button class="cart-item__remove" data-remove-key="{{ item.key }}" aria-label="Remove">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="cart-drawer__empty">Your bag is empty.</p>
+    {% endif %}
+  </div>
+
+  <div class="cart-drawer__footer" id="cart-footer" {% if not session.get('cart') %}style="display:none"{% endif %}>
+    {% set subtotal = namespace(val=0) %}
+    {% for item in session.get('cart', []) %}{% set subtotal.val = subtotal.val + item.price * item.quantity %}{% endfor %}
+    <div class="cart-drawer__subtotal">
+      <span>Subtotal</span>
+      <span id="cart-subtotal">{{ subtotal.val|currency }}</span>
+    </div>
+    <a href="{{ url_for('orders.checkout') }}" class="btn btn--black btn--full">Checkout</a>
+  </div>
+</div>
+
+<!-- ── Page content ───────────────────────── -->
+<main class="page{% block page_class %}{% endblock %}">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Footer ─────────────────────────────── -->
+<footer class="footer">
+  <span class="footer__brand">Slidin GH</span>
+  <div class="footer__links">
+    <a href="{{ url_for('orders.track_order') }}">Track Order</a>
+    <a href="#">Contact</a>
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

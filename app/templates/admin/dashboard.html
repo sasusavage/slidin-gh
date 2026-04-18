@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Dashboard</h1>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <p class="stat-card__label">Total Orders</p>
+    <p class="stat-card__value">{{ total_orders }}</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-card__label">Revenue</p>
+    <p class="stat-card__value" style="font-size:1.3rem;">{{ total_revenue|currency }}</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-card__label">Customers</p>
+    <p class="stat-card__value">{{ total_customers }}</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-card__label">Active Products</p>
+    <p class="stat-card__value">{{ total_products }}</p>
+  </div>
+</div>
+
+{% if low_stock %}
+<div style="margin-bottom:32px;padding:16px 20px;background:#fef9c3;border-left:3px solid #ca8a04;">
+  <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;color:#854d0e;">
+    Low Stock Alert ({{ low_stock|length }} variants)
+  </p>
+  {% for v in low_stock[:5] %}
+  <p style="font-size:0.78rem;margin-bottom:2px;">
+    <a href="{{ url_for('admin.product_edit', product_id=v.product_id) }}">{{ v.product.name }}</a>
+    — {{ v.size or '' }}{% if v.color %} / {{ v.color }}{% endif %}: <strong>{{ v.quantity }} left</strong>
+  </p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2 style="font-size:0.7rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--black);">
+  Recent Orders
+</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Order</th><th>Customer</th><th>City</th><th>Total</th><th>Status</th><th>Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in recent_orders %}
+    <tr>
+      <td><a href="{{ url_for('admin.order_detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+      <td>{{ order.delivery_name }}<br/><span style="color:var(--grey-3);font-size:0.7rem;">{{ order.delivery_phone }}</span></td>
+      <td>{{ order.delivery_city }}</td>
+      <td>{{ order.total|currency }}</td>
+      <td><span class="badge badge--{{ order.status }}">{{ order.status_label }}</span></td>
+      <td style="color:var(--grey-3);">{{ order.created_at.strftime('%d %b %Y') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align:center;color:var(--grey-3);padding:32px;">No orders yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

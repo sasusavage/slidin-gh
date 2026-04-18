@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+  <h1 class="admin-page-title" style="margin:0;">Orders</h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% for status in ['','pending','confirmed','processing','shipped','delivered','cancelled'] %}
+    <a href="{{ url_for('admin.orders', status=status) }}"
+       class="filter-chip {% if current_status==status %}active{% endif %}">
+      {{ status.title() if status else 'All' }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr><th>Order</th><th>Customer</th><th>City</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th></tr>
+  </thead>
+  <tbody>
+    {% for order in pagination.items %}
+    <tr>
+      <td><a href="{{ url_for('admin.order_detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+      <td>
+        {% if order.customer %}
+        <a href="{{ url_for('admin.customer_detail', customer_id=order.customer_id) }}">{{ order.delivery_name }}</a>
+        {% else %}{{ order.delivery_name }}{% endif %}
+        <br/><span style="font-size:0.7rem;color:var(--grey-3);">{{ order.delivery_phone }}</span>
+      </td>
+      <td>{{ order.delivery_city }}</td>
+      <td>{{ order.items.count() }}</td>
+      <td><strong>{{ order.total|currency }}</strong></td>
+      <td><span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);">{{ order.payment_method.replace('_',' ') }}</span></td>
+      <td><span class="badge badge--{{ order.status }}">{{ order.status_label }}</span></td>
+      <td style="color:var(--grey-3);font-size:0.72rem;">{{ order.created_at.strftime('%d %b') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--grey-3);">No orders.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}<a href="{{ url_for('admin.orders', page=pagination.prev_num, status=current_status) }}">←</a>{% endif %}
+  {% for p in pagination.iter_pages() %}
+    {% if p %}<{% if p==pagination.page %}span class="current"{% else %}a href="{{ url_for('admin.orders', page=p, status=current_status) }}"{% endif %}>{{ p }}</{% if p==pagination.page %}span{% else %}a{% endif %}>
+    {% else %}<span>…</span>{% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}<a href="{{ url_for('admin.orders', page=pagination.next_num, status=current_status) }}">→</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

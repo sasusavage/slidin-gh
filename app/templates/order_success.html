@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmed — Slidin GH{% endblock %}
+{% block search_bar %}{% endblock %}
+
+{% block content %}
+<div class="order-success" style="margin-top:56px;">
+  <p class="order-success__number">Order {{ order.order_number }}</p>
+  <h1 class="order-success__title">Order<br/>Confirmed.</h1>
+  <p class="order-success__body">
+    Thank you, {{ order.delivery_name }}.<br/>
+    We'll contact you on <strong>{{ order.delivery_phone }}</strong> to arrange delivery to
+    <strong>{{ order.delivery_city }}</strong>.
+    {% if order.delivery_email %}
+    A confirmation will be sent to {{ order.delivery_email }}.
+    {% endif %}
+  </p>
+
+  <!-- Order items recap -->
+  <div style="width:100%;max-width:420px;margin-bottom:48px;">
+    {% for item in order.items %}
+    <div style="display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--grey-2);align-items:center;">
+      {% if item.product_image %}
+      <img src="{{ item.product_image }}" alt="{{ item.product_name }}"
+           style="width:56px;height:70px;object-fit:cover;background:var(--grey);flex-shrink:0;"/>
+      {% endif %}
+      <div style="flex:1;">
+        <p style="font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">
+          {{ item.product_name }}
+        </p>
+        <p style="font-size:0.68rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.05em;margin-top:3px;">
+          {% if item.size %}{{ item.size }}{% endif %}{% if item.color %} · {{ item.color }}{% endif %}
+          &nbsp;× {{ item.quantity }}
+        </p>
+      </div>
+      <span style="font-size:0.78rem;font-weight:600;">{{ item.line_total|currency }}</span>
+    </div>
+    {% endfor %}
+    <div style="display:flex;justify-content:space-between;padding:16px 0 0;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">
+      <span>Total</span><span>{{ order.total|currency }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+    <a href="{{ url_for('store.home') }}" class="btn btn--black btn--lg">Back to Home</a>
+    <a href="{{ url_for('orders.track_order') }}" class="btn btn--outline btn--lg">Track Order</a>
+  </div>
+</div>
+{% endblock %}

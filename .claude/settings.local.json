@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(mv stitch_project_2907671802186858631/* .)",
-      "Bash(rmdir stitch_project_2907671802186858631)"
+      "Bash(rmdir stitch_project_2907671802186858631)",
+      "Read(//c/Users/DeLL/Downloads/**)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(curl -L --ssl-no-revoke -o sneakers.zip \"https://github.com/Drrbarns/sneakers/archive/refs/heads/main.zip\")"
     ]
   }
 }

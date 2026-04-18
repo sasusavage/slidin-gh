@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;">
+  <a href="{{ url_for('admin.orders') }}" style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.5;">← Orders</a>
+  <h1 class="admin-page-title" style="margin:0;">{{ order.order_number }}</h1>
+  <span class="badge badge--{{ order.status }}">{{ order.status_label }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start;">
+
+  <div>
+    <!-- Items -->
+    <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--black);">Items</p>
+    <table class="data-table" style="margin-bottom:32px;">
+      <thead><tr><th>Product</th><th>Size</th><th>Color</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for item in order.items %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              {% if item.product_image %}
+              <img src="{{ item.product_image }}" style="width:40px;height:50px;object-fit:cover;background:var(--grey);" alt=""/>
+              {% endif %}
+              {{ item.product_name }}
+            </div>
+          </td>
+          <td>{{ item.size or '—' }}</td>
+          <td>{{ item.color or '—' }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price|currency }}</td>
+          <td><strong>{{ item.line_total|currency }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="display:flex;flex-direction:column;gap:6px;max-width:280px;margin-left:auto;">
+      <div class="summary-row" style="font-size:0.75rem;padding:6px 0;">
+        <span>Subtotal</span><span>{{ order.subtotal|currency }}</span>
+      </div>
+      <div class="summary-row" style="font-size:0.75rem;padding:6px 0;">
+        <span>Delivery</span><span>{{ order.delivery_fee|currency }}</span>
+      </div>
+      <div class="summary-row summary-row--total" style="font-size:0.82rem;padding:10px 0;">
+        <span>Total</span><span>{{ order.total|currency }}</span>
+      </div>
+    </div>
+
+    <!-- Update status -->
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--grey-2);">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:12px;">Update Status</p>
+      <form method="post" action="{{ url_for('admin.update_order_status', order_id=order.id) }}" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <select name="status" style="border:1px solid var(--grey-2);padding:10px 14px;font-size:0.78rem;background:var(--white);">
+          {% for s in ['pending','confirmed','processing','shipped','delivered','cancelled'] %}
+          <option value="{{ s }}" {% if order.status==s %}selected{% endif %}>{{ s.title() }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn--black">Update</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div>
+    <div style="border:1px solid var(--black);padding:24px;margin-bottom:16px;">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:16px;">Customer</p>
+      <p style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">{{ order.delivery_name }}</p>
+      <p style="font-size:0.78rem;color:var(--grey-4);">{{ order.delivery_phone }}</p>
+      {% if order.delivery_email %}
+      <p style="font-size:0.78rem;color:var(--grey-4);">{{ order.delivery_email }}</p>
+      {% endif %}
+      {% if order.customer %}
+      <a href="{{ url_for('admin.customer_detail', customer_id=order.customer_id) }}"
+         style="display:inline-block;margin-top:12px;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;text-decoration:underline;">
+        View CRM profile →
+      </a>
+      {% endif %}
+    </div>
+
+    <div style="border:1px solid var(--grey-2);padding:24px;">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:16px;">Delivery Address</p>
+      <p style="font-size:0.82rem;line-height:1.7;">
+        {{ order.delivery_address }}<br/>
+        {{ order.delivery_city }}{% if order.delivery_region %}, {{ order.delivery_region }}{% endif %}
+      </p>
+      {% if order.delivery_notes %}
+      <p style="font-size:0.75rem;color:var(--grey-3);margin-top:10px;font-style:italic;">{{ order.delivery_notes }}</p>
+      {% endif %}
+    </div>
+
+    <div style="border:1px solid var(--grey-2);padding:24px;margin-top:16px;">
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:12px;">Order Info</p>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--grey-3);">Placed</span>
+          <span>{{ order.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--grey-3);">Payment</span>
+          <span>{{ order.payment_method.replace('_',' ').title() }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--grey-3);">Payment status</span>
+          <span>{{ order.payment_status.title() }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

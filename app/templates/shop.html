@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Shop — Slidin GH{% endblock %}
+{% block page_class %}--with-search{% endblock %}
+
+{% block content %}
+
+<div class="shop-header">
+  <h1 class="shop-title">
+    {% if current_q %}
+      &ldquo;{{ current_q }}&rdquo;
+    {% elif current_gender == 'men' %}Men
+    {% elif current_gender == 'women' %}Women
+    {% else %}All Products
+    {% endif %}
+  </h1>
+  <span style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--grey-3);">
+    {{ pagination.total }} items
+  </span>
+</div>
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <a href="{{ url_for('store.shop') }}"
+     class="filter-chip {% if not current_gender and not current_category %}active{% endif %}">All</a>
+  <a href="{{ url_for('store.shop', gender='men', q=current_q) }}"
+     class="filter-chip {% if current_gender=='men' %}active{% endif %}">Men</a>
+  <a href="{{ url_for('store.shop', gender='women', q=current_q) }}"
+     class="filter-chip {% if current_gender=='women' %}active{% endif %}">Women</a>
+  {% for cat in categories %}
+  <a href="{{ url_for('store.shop', category=cat.slug, q=current_q) }}"
+     class="filter-chip {% if current_category==cat.slug %}active{% endif %}">{{ cat.name }}</a>
+  {% endfor %}
+
+  <!-- Sort -->
+  <form method="get" style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    {% if current_q %}<input type="hidden" name="q" value="{{ current_q }}"/>{% endif %}
+    {% if current_gender %}<input type="hidden" name="gender" value="{{ current_gender }}"/>{% endif %}
+    {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}"/>{% endif %}
+    <select name="sort" onchange="this.form.submit()"
+            style="border:1px solid var(--grey-2);padding:7px 12px;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;background:var(--white);cursor:pointer;">
+      <option value="newest" {% if current_sort=='newest' %}selected{% endif %}>Newest</option>
+      <option value="price_asc" {% if current_sort=='price_asc' %}selected{% endif %}>Price ↑</option>
+      <option value="price_desc" {% if current_sort=='price_desc' %}selected{% endif %}>Price ↓</option>
+    </select>
+  </form>
+</div>
+
+<!-- Product grid -->
+{% if products %}
+<div class="product-grid" style="margin:1px 1px 0;border-top:1px solid var(--black);">
+  {% for product in products %}
+  <a href="{{ url_for('store.product_detail', slug=product.slug) }}" class="product-card">
+    <div class="product-card__img-wrap">
+      <img class="product-card__img" src="{{ product.primary_image }}" alt="{{ product.name }}" loading="lazy"/>
+      {% if product.compare_at_price %}<span class="product-card__badge">Sale</span>{% endif %}
+    </div>
+    <div class="product-card__info">
+      <p class="product-card__name">{{ product.name }}</p>
+      <p class="product-card__price">
+        {{ product.price|currency }}
+        {% if product.compare_at_price %}
+        <span class="product-card__compare">{{ product.compare_at_price|currency }}</span>
+        {% endif %}
+      </p>
+      {% set colors = product.colors %}
+      {% if colors %}
+      <div class="product-card__colors">
+        {% for c in colors[:6] %}
+        <span class="color-swatch" style="background:{{ c.hex }}" title="{{ c.name }}"></span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div style="padding:96px 24px;text-align:center;">
+  <p style="font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--grey-3);">
+    No products found.
+  </p>
+  <a href="{{ url_for('store.shop') }}" class="btn btn--outline" style="margin-top:24px;">Clear filters</a>
+</div>
+{% endif %}
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}
+  <a href="{{ url_for('store.shop', page=pagination.prev_num, q=current_q, gender=current_gender, category=current_category, sort=current_sort) }}">←</a>
+  {% endif %}
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      {% if p == pagination.page %}
+      <span class="current">{{ p }}</span>
+      {% else %}
+      <a href="{{ url_for('store.shop', page=p, q=current_q, gender=current_gender, category=current_category, sort=current_sort) }}">{{ p }}</a>
+      {% endif %}
+    {% else %}
+      <span>…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}
+  <a href="{{ url_for('store.shop', page=pagination.next_num, q=current_q, gender=current_gender, category=current_category, sort=current_sort) }}">→</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

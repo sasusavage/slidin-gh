@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — Slidin GH{% endblock %}
+{% block search_bar %}{% endblock %}
+{% block page_class %}{% endblock %}
+
+{% block content %}
+<div class="pdp" style="margin-top:56px;">
+
+  <!-- Gallery -->
+  <div class="pdp__gallery">
+    {% set images = product.all_images %}
+    <img id="gallery-main" class="pdp__gallery-main"
+         src="{{ images[0] if images else '/static/img/placeholder.jpg' }}"
+         alt="{{ product.name }}"/>
+    {% if images|length > 1 %}
+    <div class="pdp__thumbs">
+      {% for img in images %}
+      <img class="pdp__thumb {% if loop.first %}active{% endif %}"
+           src="{{ img }}" data-src="{{ img }}" alt="{{ product.name }} {{ loop.index }}"/>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Info panel -->
+  <div class="pdp__info">
+
+    <div>
+      {% if product.brand %}<p class="pdp__brand">{{ product.brand }}</p>{% endif %}
+      <h1 class="pdp__name">{{ product.name }}</h1>
+    </div>
+
+    <p class="pdp__price">
+      <span id="variant-price">{{ product.price|currency }}</span>
+      {% if product.compare_at_price %}
+      <span class="pdp__price-compare">{{ product.compare_at_price|currency }}</span>
+      {% endif %}
+    </p>
+
+    <!-- Color selector -->
+    {% set colors = product.colors %}
+    {% if colors %}
+    <div>
+      <span class="selector-label">Color — <span id="selected-color-label">{{ colors[0].name }}</span></span>
+      <div class="color-grid">
+        {% for c in colors %}
+        <button class="color-btn {% if loop.first %}active{% endif %}"
+                data-color="{{ c.name }}"
+                style="background:{{ c.hex }}"
+                title="{{ c.name }}"
+                onclick="document.getElementById('selected-color-label').textContent=this.dataset.color">
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Size selector -->
+    {% set sizes = product.sizes %}
+    {% if sizes %}
+    <div>
+      <span class="selector-label">Size (UK)</span>
+      <div class="size-grid">
+        {% for size in sizes %}
+        <button class="size-btn" data-size="{{ size }}">{{ size }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Qty + Add to cart -->
+    <div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+        <button id="qty-minus" class="size-btn" style="font-size:1.2rem;">−</button>
+        <input id="qty-input" type="number" value="1" min="1"
+               style="width:48px;height:44px;text-align:center;border:1px solid var(--grey-2);font-size:0.9rem;font-weight:600;"/>
+        <button id="qty-plus" class="size-btn" style="font-size:1.2rem;">+</button>
+      </div>
+      <input type="hidden" id="selected-variant" value=""/>
+      <input type="hidden" id="selected-color" value="{{ colors[0].name if colors else '' }}"/>
+      <button id="add-to-cart"
+              class="btn btn--black btn--full btn--lg"
+              data-product-id="{{ product.id }}"
+              {% if not product.in_stock %}disabled{% endif %}>
+        {% if product.in_stock %}Add to Bag{% else %}Out of Stock{% endif %}
+      </button>
+    </div>
+
+    {% if product.description %}
+    <div class="pdp__desc">{{ product.description }}</div>
+    {% endif %}
+
+    <!-- Delivery note -->
+    <p style="font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--grey-3);border-top:1px solid var(--grey-2);padding-top:20px;">
+      Same-day delivery in Accra &nbsp;·&nbsp; Cash on delivery
+    </p>
+
+  </div>
+</div>
+
+<!-- Related products -->
+{% if related %}
+<section class="section" style="border-top:1px solid var(--black);">
+  <span class="section-label">You May Also Like</span>
+  <div class="product-grid" style="border:1px solid var(--black);">
+    {% for p in related %}
+    <a href="{{ url_for('store.product_detail', slug=p.slug) }}" class="product-card">
+      <div class="product-card__img-wrap">
+        <img class="product-card__img" src="{{ p.primary_image }}" alt="{{ p.name }}" loading="lazy"/>
+      </div>
+      <div class="product-card__info">
+        <p class="product-card__name">{{ p.name }}</p>
+        <p class="product-card__price">{{ p.price|currency }}</p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}
