@@ -82,7 +82,11 @@
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
       {% for img in product.all_images %}
       <div style="position:relative;">
+        {% if img.endswith('.mp4') or img.endswith('.mov') or img.endswith('.webm') %}
+        <video src="{{ img }}" style="width:80px;height:100px;object-fit:cover;background:#000;" muted playsinline></video>
+        {% else %}
         <img src="{{ img }}" style="width:80px;height:100px;object-fit:cover;background:var(--grey);"/>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -90,8 +94,8 @@
   {% endif %}
 
   <div class="admin-field">
-    <label>Upload Images (JPG, PNG, WEBP)</label>
-    <input type="file" name="images" multiple accept="image/*"/>
+    <label>Upload Images / Videos (JPG, PNG, WEBP, MP4, MOV — max 100 MB per video)</label>
+    <input type="file" name="images" multiple accept="image/*,video/mp4,video/quicktime,video/webm"/>
   </div>
 
   <!-- Variants -->

@@ -12,9 +12,9 @@ class Config:
     # Always resolve to absolute path so it works both locally and in Docker
     _upload_rel = os.environ.get('UPLOAD_FOLDER', 'app/static/uploads')
     UPLOAD_FOLDER = _upload_rel if os.path.isabs(_upload_rel) else os.path.join(os.path.dirname(os.path.abspath(__file__)), _upload_rel)
-    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 200 * 1024 * 1024))  # 200 MB
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'avif'}
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'avif', 'mp4', 'mov', 'webm'}
 
 class DevelopmentConfig(Config):
     DEBUG = True

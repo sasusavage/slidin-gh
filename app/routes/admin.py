@@ -13,7 +13,8 @@ import re, uuid
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates/admin')
 
-ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'webp', 'avif'}
+ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'webp', 'avif', 'mp4', 'mov', 'webm'}
+MAX_VIDEO_BYTES = 100 * 1024 * 1024  # 100 MB
 
 
 def allowed_file(filename):
@@ -223,6 +224,14 @@ def _save_product(product, categories):
     for f in images:
         if f and allowed_file(f.filename):
             ext = f.filename.rsplit('.', 1)[1].lower()
+            # Size check for videos (stream to check without full read)
+            if ext in ('mp4', 'mov', 'webm'):
+                f.seek(0, 2)
+                size = f.tell()
+                f.seek(0)
+                if size > MAX_VIDEO_BYTES:
+                    flash(f'Video "{f.filename}" exceeds 100 MB limit — skipped.', 'error')
+                    continue
             fname = f'{uuid.uuid4()}.{ext}'
             f.save(os.path.join(upload_folder, fname))
             img = ProductImage(
