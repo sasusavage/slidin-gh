@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, session, jsonify, redirect, url_for, abort
-from app.models import Product, Category, ProductVariant, SiteSettings
+from app.models import Product, Category, ProductVariant, SiteSettings, Banner, Page
 from app import db
 
 store_bp = Blueprint('store', __name__)
@@ -143,6 +143,13 @@ def cart():
     cart_items = session.get('cart', [])
     subtotal = sum(i['price'] * i['quantity'] for i in cart_items)
     return render_template('cart.html', cart_items=cart_items, subtotal=subtotal)
+
+
+@store_bp.route('/p/<slug>')
+def static_page(slug):
+    page = Page.query.filter_by(slug=slug, status='published').first_or_404()
+    s = SiteSettings.get_all()
+    return render_template('page.html', page=page, s=s)
 
 
 @store_bp.route('/api/variant-stock')

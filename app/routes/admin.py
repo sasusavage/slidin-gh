@@ -4,7 +4,8 @@ from flask import (Blueprint, render_template, request, session,
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (Product, ProductImage, ProductVariant, Category,
-                         Order, Customer, AdminUser, SiteSettings)
+                         Order, Customer, AdminUser, SiteSettings,
+                         Banner, Page, CouponCode)
 from app import db
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -329,33 +330,252 @@ def category_save():
 
 # ── CMS / Site Settings ───────────────────────────────────────────────────────
 
-@admin_bp.route('/cms', methods=['GET', 'POST'])
+@admin_bp.route('/cms')
 @admin_required
 def cms():
+    return redirect(url_for('admin.settings'))
+
+
+_ALL_SETTING_KEYS = [
+    'site_name','site_tagline','site_logo','site_favicon',
+    'contact_email','contact_phone','contact_address','currency','currency_symbol',
+    'social_instagram','social_facebook','social_twitter','social_tiktok','social_whatsapp',
+    'primary_color','secondary_color','accent_color',
+    'hero_style','hero_media_type','hero_media_url','hero_label','hero_title','hero_subheadline',
+    'hero_cta_primary_text','hero_cta_primary_url','hero_cta_secondary_text','hero_cta_secondary_url',
+    'hero_badge_label','hero_badge_text','hero_badge_subtext',
+    'hero_stat1_title','hero_stat1_desc','hero_stat2_title','hero_stat2_desc',
+    'hero_stat3_title','hero_stat3_desc',
+    'feature1_icon','feature1_title','feature1_desc',
+    'feature2_icon','feature2_title','feature2_desc',
+    'feature3_icon','feature3_title','feature3_desc',
+    'feature4_icon','feature4_title','feature4_desc',
+    'announcement_bar_text','announcement_bar_active',
+    'header_show_search','header_nav_links_json',
+    'footer_col1_title','footer_col1_links_json',
+    'footer_col2_title','footer_col2_links_json',
+    'footer_col3_title','footer_col3_links_json',
+    'footer_copyright_text','footer_show_newsletter',
+    'footer_newsletter_title','footer_newsletter_subtitle',
+    'about_hero_title','about_hero_subtitle','about_story_title','about_story_content',
+    'about_story_image','about_founder_name','about_founder_title',
+    'about_mission1_title','about_mission1_content','about_mission2_title','about_mission2_content',
+    'about_cta_title','about_cta_subtitle',
+    'contact_hero_title','contact_hero_subtitle','contact_hours','contact_whatsapp_hours',
+    'contact_map_link','contact_team_json',
+    'seo_title','seo_description','seo_keywords','seo_og_image','seo_google_analytics',
+]
+
+
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@admin_required
+def settings():
     if request.method == 'POST':
-        keys = [
-            'hero_style', 'hero_media_type', 'hero_media_url',
-            'hero_label', 'hero_title',
-            'hero_cta_primary_text', 'hero_cta_primary_url',
-            'hero_cta_secondary_text', 'hero_cta_secondary_url',
-            'announcement_bar_text', 'announcement_bar_active',
-            'site_name',
-        ]
-        for key in keys:
+        for key in _ALL_SETTING_KEYS:
             val = request.form.get(key, '').strip()
             SiteSettings.set(key, val)
 
-        # Hero media file upload (optional — overrides hero_media_url if provided)
-        hero_file = request.files.get('hero_media_file')
-        if hero_file and allowed_file(hero_file.filename):
-            ext = hero_file.filename.rsplit('.', 1)[1].lower()
-            fname = f'hero_{uuid.uuid4()}.{ext}'
-            hero_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
-            SiteSettings.set('hero_media_url', f'/static/uploads/{fname}')
+        # Handle file uploads that override URL fields
+        _upload_map = {
+            'site_logo_file': 'site_logo',
+            'site_favicon_file': 'site_favicon',
+            'hero_media_file': 'hero_media_url',
+            'about_story_image_file': 'about_story_image',
+            'seo_og_image_file': 'seo_og_image',
+        }
+        for field, setting_key in _upload_map.items():
+            f = request.files.get(field)
+            if f and allowed_file(f.filename):
+                ext = f.filename.rsplit('.', 1)[1].lower()
+                fname = f'{setting_key}_{uuid.uuid4()}.{ext}'
+                f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
+                SiteSettings.set(setting_key, f'/static/uploads/{fname}')
 
         db.session.commit()
-        flash('Site settings saved.', 'success')
-        return redirect(url_for('admin.cms'))
+        flash('Settings saved.', 'success')
+        tab = request.form.get('_tab', 'general')
+        return redirect(url_for('admin.settings') + f'?tab={tab}')
 
-    settings = SiteSettings.get_all()
-    return render_template('admin/cms.html', s=settings)
+    s = SiteSettings.get_all()
+    tab = request.args.get('tab', 'general')
+    return render_template('admin/settings.html', s=s, tab=tab)
+
+
+# ── Banners ───────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/banners')
+@admin_required
+def banners():
+    items = Banner.query.order_by(Banner.sort_order, Banner.created_at.desc()).all()
+    return render_template('admin/banners.html', banners=items)
+
+
+@admin_bp.route('/banners/save', methods=['POST'])
+@admin_required
+def banner_save():
+    bid = request.form.get('id')
+    if bid:
+        banner = Banner.query.get_or_404(bid)
+    else:
+        banner = Banner(id=str(uuid.uuid4()))
+        db.session.add(banner)
+
+    banner.name = request.form.get('name', '').strip() or 'Banner'
+    banner.type = request.form.get('type', 'promotional')
+    banner.title = request.form.get('title', '').strip()
+    banner.subtitle = request.form.get('subtitle', '').strip()
+    banner.background_color = request.form.get('background_color', '#000000')
+    banner.text_color = request.form.get('text_color', '#FFFFFF')
+    banner.button_text = request.form.get('button_text', '').strip()
+    banner.button_url = request.form.get('button_url', '').strip()
+    banner.position = request.form.get('position', 'top')
+    banner.sort_order = int(request.form.get('sort_order', 0))
+    banner.is_active = bool(request.form.get('is_active'))
+
+    sd = request.form.get('start_date', '').strip()
+    ed = request.form.get('end_date', '').strip()
+    banner.start_date = datetime.fromisoformat(sd) if sd else None
+    banner.end_date = datetime.fromisoformat(ed) if ed else None
+
+    img_file = request.files.get('image')
+    if img_file and allowed_file(img_file.filename):
+        ext = img_file.filename.rsplit('.', 1)[1].lower()
+        fname = f'banner_{uuid.uuid4()}.{ext}'
+        img_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
+        banner.image_url = f'/static/uploads/{fname}'
+
+    db.session.commit()
+    flash('Banner saved.', 'success')
+    return redirect(url_for('admin.banners'))
+
+
+@admin_bp.route('/banners/<banner_id>/delete', methods=['POST'])
+@admin_required
+def banner_delete(banner_id):
+    banner = Banner.query.get_or_404(banner_id)
+    db.session.delete(banner)
+    db.session.commit()
+    return redirect(url_for('admin.banners'))
+
+
+# ── CMS Pages ─────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/pages')
+@admin_required
+def pages():
+    items = Page.query.order_by(Page.updated_at.desc()).all()
+    return render_template('admin/pages.html', pages=items)
+
+
+@admin_bp.route('/pages/new', methods=['GET', 'POST'])
+@admin_required
+def page_new():
+    if request.method == 'POST':
+        return _save_page(None)
+    return render_template('admin/page_form.html', page=None)
+
+
+@admin_bp.route('/pages/<page_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def page_edit(page_id):
+    page = Page.query.get_or_404(page_id)
+    if request.method == 'POST':
+        return _save_page(page)
+    return render_template('admin/page_form.html', page=page)
+
+
+def _save_page(page):
+    title = request.form.get('title', '').strip()
+    if not title:
+        flash('Title is required.', 'error')
+        return redirect(request.url)
+    is_new = page is None
+    if is_new:
+        page = Page(id=str(uuid.uuid4()))
+        db.session.add(page)
+    page.title = title
+    page.slug = request.form.get('slug', '').strip() or slugify(title)
+    page.content = request.form.get('content', '')
+    page.status = request.form.get('status', 'draft')
+    page.seo_title = request.form.get('seo_title', '').strip()
+    page.seo_description = request.form.get('seo_description', '').strip()
+    db.session.commit()
+    flash(f'Page {"created" if is_new else "updated"}.', 'success')
+    return redirect(url_for('admin.pages'))
+
+
+@admin_bp.route('/pages/<page_id>/delete', methods=['POST'])
+@admin_required
+def page_delete(page_id):
+    page = Page.query.get_or_404(page_id)
+    db.session.delete(page)
+    db.session.commit()
+    return redirect(url_for('admin.pages'))
+
+
+# ── Coupons ───────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/coupons')
+@admin_required
+def coupons():
+    items = CouponCode.query.order_by(CouponCode.created_at.desc()).all()
+    return render_template('admin/coupons.html', coupons=items)
+
+
+@admin_bp.route('/coupons/save', methods=['POST'])
+@admin_required
+def coupon_save():
+    cid = request.form.get('id')
+    if cid:
+        coupon = CouponCode.query.get_or_404(cid)
+    else:
+        coupon = CouponCode(id=str(uuid.uuid4()))
+        db.session.add(coupon)
+
+    coupon.code = request.form.get('code', '').strip().upper()
+    coupon.description = request.form.get('description', '').strip()
+    coupon.discount_type = request.form.get('discount_type', 'percent')
+    coupon.discount_value = float(request.form.get('discount_value', 0))
+    coupon.min_order_amount = float(request.form.get('min_order_amount', 0) or 0)
+    max_uses = request.form.get('max_uses', '').strip()
+    coupon.max_uses = int(max_uses) if max_uses else None
+    coupon.is_active = bool(request.form.get('is_active'))
+
+    sd = request.form.get('start_date', '').strip()
+    ed = request.form.get('end_date', '').strip()
+    coupon.start_date = datetime.fromisoformat(sd) if sd else None
+    coupon.end_date = datetime.fromisoformat(ed) if ed else None
+
+    db.session.commit()
+    flash('Coupon saved.', 'success')
+    return redirect(url_for('admin.coupons'))
+
+
+@admin_bp.route('/coupons/<coupon_id>/delete', methods=['POST'])
+@admin_required
+def coupon_delete(coupon_id):
+    coupon = CouponCode.query.get_or_404(coupon_id)
+    db.session.delete(coupon)
+    db.session.commit()
+    return redirect(url_for('admin.coupons'))
+
+
+@admin_bp.route('/coupons/validate', methods=['POST'])
+def coupon_validate():
+    """Called by checkout JS to validate a coupon code."""
+    code = request.json.get('code', '').strip().upper()
+    amount = float(request.json.get('amount', 0))
+    coupon = CouponCode.query.filter_by(code=code).first()
+    if not coupon or not coupon.is_valid:
+        return jsonify({'valid': False, 'message': 'Invalid or expired coupon.'})
+    if amount < float(coupon.min_order_amount):
+        return jsonify({'valid': False,
+                        'message': f'Minimum order GH₵{coupon.min_order_amount:.0f} required.'})
+    if coupon.discount_type == 'percent':
+        discount = round(amount * float(coupon.discount_value) / 100, 2)
+        label = f'{coupon.discount_value:.0f}% off'
+    else:
+        discount = min(float(coupon.discount_value), amount)
+        label = f'GH₵{coupon.discount_value:.2f} off'
+    return jsonify({'valid': True, 'discount': discount, 'label': label,
+                    'coupon_id': coupon.id})

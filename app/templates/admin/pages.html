@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block title %}Pages{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+  <h1 class="admin-page-title" style="margin:0;">CMS Pages</h1>
+  <a href="{{ url_for('admin.page_new') }}" class="btn btn--black">+ New Page</a>
+</div>
+
+<table class="data-table">
+  <thead><tr><th>Title</th><th>Slug</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+  <tbody>
+    {% for p in pages %}
+    <tr>
+      <td><strong>{{ p.title }}</strong></td>
+      <td style="color:var(--grey-3);font-size:0.8rem;">/p/{{ p.slug }}</td>
+      <td><span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ 'green' if p.status=='published' else '#aaa' }};">{{ p.status }}</span></td>
+      <td style="font-size:0.75rem;color:#666;">{{ p.updated_at.strftime('%d %b %Y') }}</td>
+      <td style="display:flex;gap:8px;">
+        <a href="{{ url_for('admin.page_edit', page_id=p.id) }}" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</a>
+        {% if p.status == 'published' %}
+        <a href="{{ url_for('store.static_page', slug=p.slug) }}" target="_blank" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:#666;">View</a>
+        {% endif %}
+        <form method="post" action="{{ url_for('admin.page_delete', page_id=p.id) }}" onsubmit="return confirm('Delete this page?')">
+          <button type="submit" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:red;background:none;border:none;cursor:pointer;">Del</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align:center;padding:24px;color:#aaa;">No pages yet. Create one to build your About, FAQ, Privacy pages.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Edit' if page else 'New' }} Page{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
+  <a href="{{ url_for('admin.pages') }}" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;">← Pages</a>
+  <h1 class="admin-page-title" style="margin:0;">{{ 'Edit Page' if page else 'New Page' }}</h1>
+</div>
+
+<form method="post" style="max-width:860px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+    <div class="admin-field"><label>Title *</label><input type="text" name="title" value="{{ page.title if page else '' }}" required id="pg-title" oninput="autoSlug()"/></div>
+    <div class="admin-field"><label>Slug <span style="font-weight:400;text-transform:none;">(URL: /p/slug)</span></label><input type="text" name="slug" id="pg-slug" value="{{ page.slug if page else ''}}" placeholder="auto-generated"/></div>
+    <div class="admin-field"><label>Status</label>
+      <select name="status">
+        <option value="draft" {% if not page or page.status=='draft' %}selected{% endif %}>Draft</option>
+        <option value="published" {% if page and page.status=='published' %}selected{% endif %}>Published</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="admin-field">
+    <label>Content <span style="font-weight:400;text-transform:none;">(HTML supported)</span></label>
+    <textarea name="content" rows="16" style="font-family:monospace;font-size:0.85rem;">{{ page.content if page else '' }}</textarea>
+  </div>
+
+  <div style="border-top:1px solid #eee;padding-top:24px;margin-top:24px;">
+    <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;">SEO</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div class="admin-field"><label>Meta Title</label><input type="text" name="seo_title" value="{{ page.seo_title if page else '' }}"/></div>
+      <div class="admin-field"><label>Meta Description</label><input type="text" name="seo_description" value="{{ page.seo_description if page else '' }}" maxlength="160"/></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-top:24px;">
+    <button type="submit" class="btn btn--black">{{ 'Update Page' if page else 'Create Page' }}</button>
+    <a href="{{ url_for('admin.pages') }}" class="btn btn--outline">Cancel</a>
+  </div>
+</form>
+
+<script>
+let slugEdited = {{ 'true' if page else 'false' }};
+function autoSlug() {
+  if (slugEdited) return;
+  const v = document.getElementById('pg-title').value.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').trim();
+  document.getElementById('pg-slug').value = v;
+}
+document.getElementById('pg-slug').addEventListener('input', () => slugEdited = true);
+</script>
+{% endblock %}

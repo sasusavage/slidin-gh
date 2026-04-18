@@ -34,10 +34,18 @@ def create_app(config_name=None):
             return 'GH₵0.00'
 
     @app.context_processor
-    def inject_cart():
+    def inject_globals():
         from flask import session
+        from app.models import SiteSettings, Banner
         cart = session.get('cart', [])
         cart_count = sum(item['quantity'] for item in cart)
-        return {'cart_count': cart_count}
+        try:
+            site = SiteSettings.get_all()
+            banners = [b for b in Banner.query.filter_by(is_active=True)
+                       .order_by(Banner.sort_order).all() if b.is_live]
+        except Exception:
+            site = SiteSettings.DEFAULTS.copy()
+            banners = []
+        return {'cart_count': cart_count, 'site': site, 'live_banners': banners}
 
     return app

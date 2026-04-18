@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Slidin GH{% endblock %}
+{% block title %}{{ site.seo_title or site.site_name }}{% endblock %}
 
 {% block search_bar %}
 <div class="search-bar" style="margin-top:56px;">
@@ -39,9 +39,18 @@
        alt="Campaign" onerror="this.style.display='none'"/>
   {% endif %}
 
+  {% if hero.hero_badge_text %}
+  <div class="hero-badge">
+    {% if hero.hero_badge_label %}<span class="hero-badge__label">{{ hero.hero_badge_label }}</span>{% endif %}
+    <span class="hero-badge__text">{{ hero.hero_badge_text }}</span>
+    {% if hero.hero_badge_subtext %}<span class="hero-badge__sub">{{ hero.hero_badge_subtext }}</span>{% endif %}
+  </div>
+  {% endif %}
+
   <div class="hero__content">
     {% if hero.hero_label %}<span class="hero__label">{{ hero.hero_label }}</span>{% endif %}
     <h1 class="hero__title">{{ hero.hero_title or 'Campaign' }}</h1>
+    {% if hero.hero_subheadline %}<p style="color:rgba(255,255,255,0.7);font-size:0.9rem;max-width:480px;margin-bottom:32px;">{{ hero.hero_subheadline }}</p>{% endif %}
     <div class="hero__actions">
       {% if hero.hero_cta_secondary_text %}
       <a href="{{ hero.hero_cta_secondary_url or '/shop' }}" class="btn btn--outline-white btn--lg">{{ hero.hero_cta_secondary_text }}</a>
@@ -50,8 +59,46 @@
       <a href="{{ hero.hero_cta_primary_url or '/shop' }}" class="btn btn--white btn--lg">{{ hero.hero_cta_primary_text }}</a>
       {% endif %}
     </div>
+    {% set has_stats = hero.hero_stat1_title or hero.hero_stat2_title or hero.hero_stat3_title %}
+    {% if has_stats %}
+    <div class="hero-stats">
+      {% for n in [1,2,3] %}{% set t = hero['hero_stat'~n~'_title'] %}{% if t %}
+      <div class="hero-stat">
+        <div class="hero-stat__title">{{ t }}</div>
+        <div class="hero-stat__desc">{{ hero['hero_stat'~n~'_desc'] }}</div>
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
   </div>
 </section>
+
+<!-- Trust strip -->
+{% set has_features = site.feature1_title or site.feature2_title %}
+{% if has_features %}
+<div class="trust-strip">
+  {% for n in [1,2,3,4] %}{% set t = site['feature'~n~'_title'] %}{% if t %}
+  <div class="trust-strip__item">
+    {% set icon = site['feature'~n~'_icon'] %}
+    {% if icon %}<div class="trust-strip__icon"><i class="{{ icon }}"></i></div>{% endif %}
+    <div class="trust-strip__title">{{ t }}</div>
+    <div class="trust-strip__desc">{{ site['feature'~n~'_desc'] }}</div>
+  </div>
+  {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- Homepage banners -->
+{% for b in live_banners if b.position == 'homepage' %}
+<div class="site-banner" style="background:{{ b.background_color }};color:{{ b.text_color }};">
+  {% if b.image_url %}<img src="{{ b.image_url }}" style="max-height:300px;width:100%;object-fit:cover;display:block;"/>{% endif %}
+  <div style="padding:24px;text-align:center;">
+    {% if b.title %}<p style="font-size:1.2rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">{{ b.title }}</p>{% endif %}
+    {% if b.subtitle %}<p style="margin-top:8px;opacity:0.8;">{{ b.subtitle }}</p>{% endif %}
+    {% if b.button_text and b.button_url %}<a href="{{ b.button_url }}" class="btn btn--outline" style="margin-top:16px;color:inherit;border-color:currentColor;">{{ b.button_text }}</a>{% endif %}
+  </div>
+</div>
+{% endfor %}
 
 <!-- Category grid -->
 {% if categories %}

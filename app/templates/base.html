@@ -3,15 +3,30 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}Slidin GH{% endblock %}</title>
-  <meta name="description" content="{% block meta_desc %}Premium sneakers and footwear. Accra, Ghana.{% endblock %}"/>
+  <title>{% block title %}{{ site.site_name }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}{{ site.seo_description }}{% endblock %}"/>
+  <meta name="keywords" content="{{ site.seo_keywords }}"/>
+  {% if site.seo_og_image %}<meta property="og:image" content="{{ site.seo_og_image }}"/>{% endif %}
+  {% if site.site_favicon %}<link rel="icon" href="{{ site.site_favicon }}"/>{% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"/>
+  {% if site.seo_google_analytics %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.seo_google_analytics }}"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ site.seo_google_analytics }}');</script>
+  {% endif %}
   {% block head %}{% endblock %}
 </head>
 <body>
+
+{% for b in live_banners if b.position == 'top' %}
+<div class="site-banner" style="background:{{ b.background_color }};color:{{ b.text_color }};">
+  <span>{% if b.title %}<strong>{{ b.title }}</strong>{% endif %}{% if b.subtitle %} — {{ b.subtitle }}{% endif %}</span>
+  {% if b.button_text and b.button_url %}<a href="{{ b.button_url }}" style="color:inherit;text-decoration:underline;margin-left:12px;">{{ b.button_text }}</a>{% endif %}
+</div>
+{% endfor %}
 
 <!-- ── Navigation ─────────────────────────── -->
 <header class="nav">

@@ -260,7 +260,7 @@ ul, ol { list-style: none; }
   }
 }
 
-/* Announcement bar */
+/* Announcement bar (DB-driven via hero settings) */
 .announcement-bar {
   background: var(--black);
   color: var(--white);
@@ -270,6 +270,58 @@ ul, ol { list-style: none; }
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+/* Site-wide banners (from Banners table) */
+.site-banner {
+  text-align: center;
+  padding: 10px 24px;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+/* Trust features strip */
+.trust-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--black);
+}
+.trust-strip__item {
+  padding: 24px 20px;
+  border-right: 1px solid var(--black);
+  text-align: center;
+}
+.trust-strip__item:last-child { border-right: none; }
+.trust-strip__icon { font-size: 1.4rem; margin-bottom: 8px; }
+.trust-strip__title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px; }
+.trust-strip__desc { font-size: 0.68rem; color: #666; }
+@media (max-width: 767px) {
+  .trust-strip { grid-template-columns: 1fr 1fr; }
+  .trust-strip__item:nth-child(2) { border-right: none; }
+  .trust-strip__item:nth-child(3) { border-right: 1px solid var(--black); }
+}
+/* Hero stats */
+.hero-stats {
+  display: flex;
+  gap: 48px;
+  padding: 32px 24px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  margin-top: 32px;
+}
+.hero-stat__title { font-size: 1.4rem; font-weight: 700; color: var(--white); }
+.hero-stat__desc { font-size: 0.65rem; color: rgba(255,255,255,0.55); letter-spacing: 0.1em; text-transform: uppercase; }
+/* Hero badge */
+.hero-badge {
+  position: absolute;
+  top: 80px;
+  right: 24px;
+  background: var(--white);
+  color: var(--black);
+  padding: 16px 20px;
+  text-align: center;
+  min-width: 100px;
+  z-index: 3;
+}
+.hero-badge__label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.6; display: block; }
+.hero-badge__text { font-size: 1.4rem; font-weight: 700; line-height: 1; display: block; margin: 4px 0; }
+.hero-badge__sub { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; display: block; }
 
 /* ═══════════════════════════════════════════
    BUTTONS

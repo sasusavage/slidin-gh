@@ -224,20 +224,104 @@ class SiteSettings(db.Model):
     value = db.Column(db.Text)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Defaults used when the row doesn't exist yet
     DEFAULTS = {
-        'hero_style': 'balenciaga',        # balenciaga | puma
-        'hero_media_type': 'image',        # image | video
-        'hero_media_url': '',              # relative static path or absolute URL
+        # General
+        'site_name': 'Slidin GH',
+        'site_tagline': 'Premium Sneakers in Ghana',
+        'site_logo': '',
+        'site_favicon': '',
+        'contact_email': '',
+        'contact_phone': '',
+        'contact_address': '',
+        'currency': 'GHS',
+        'currency_symbol': 'GH₵',
+        # Social
+        'social_instagram': '',
+        'social_facebook': '',
+        'social_twitter': '',
+        'social_tiktok': '',
+        'social_whatsapp': '',
+        # Appearance / colors
+        'primary_color': '#000000',
+        'secondary_color': '#ffffff',
+        'accent_color': '#111111',
+        # Hero
+        'hero_style': 'balenciaga',
+        'hero_media_type': 'image',
+        'hero_media_url': '',
         'hero_label': 'SS 2025 — Slidin GH',
         'hero_title': 'Campaign',
+        'hero_subheadline': '',
         'hero_cta_primary_text': 'Shop Sneakers',
         'hero_cta_primary_url': '/shop',
         'hero_cta_secondary_text': 'Discover Now',
         'hero_cta_secondary_url': '/shop',
+        'hero_badge_label': '',
+        'hero_badge_text': '',
+        'hero_badge_subtext': '',
+        'hero_stat1_title': '',
+        'hero_stat1_desc': '',
+        'hero_stat2_title': '',
+        'hero_stat2_desc': '',
+        'hero_stat3_title': '',
+        'hero_stat3_desc': '',
+        # Trust features
+        'feature1_icon': 'ri-truck-line',
+        'feature1_title': 'Free Delivery',
+        'feature1_desc': 'On orders over GH₵500',
+        'feature2_icon': 'ri-shield-check-line',
+        'feature2_title': '100% Authentic',
+        'feature2_desc': 'All sneakers verified',
+        'feature3_icon': 'ri-refresh-line',
+        'feature3_title': 'Easy Returns',
+        'feature3_desc': '7-day return policy',
+        'feature4_icon': 'ri-customer-service-2-line',
+        'feature4_title': '24/7 Support',
+        'feature4_desc': 'Chat or call us anytime',
+        # Announcement bar
         'announcement_bar_text': '',
         'announcement_bar_active': 'false',
-        'site_name': 'Slidin GH',
+        # Header
+        'header_show_search': 'true',
+        'header_nav_links_json': '[{"label":"Shop","href":"/shop"},{"label":"About","href":"/p/about"}]',
+        # Footer
+        'footer_col1_title': 'Shop',
+        'footer_col1_links_json': '[{"label":"All Sneakers","href":"/shop"},{"label":"New Arrivals","href":"/shop?sort=newest"},{"label":"Sale","href":"/shop?sale=1"}]',
+        'footer_col2_title': 'Customer Care',
+        'footer_col2_links_json': '[{"label":"Track Order","href":"/track-order"},{"label":"Returns","href":"/p/returns"},{"label":"FAQ","href":"/p/faq"}]',
+        'footer_col3_title': 'Company',
+        'footer_col3_links_json': '[{"label":"About Us","href":"/p/about"},{"label":"Contact","href":"/p/contact"},{"label":"Privacy","href":"/p/privacy"}]',
+        'footer_copyright_text': '© 2025 Slidin GH. All rights reserved.',
+        'footer_show_newsletter': 'false',
+        'footer_newsletter_title': 'Stay in the loop',
+        'footer_newsletter_subtitle': 'New drops, exclusive deals — in your inbox.',
+        # About page
+        'about_hero_title': 'Our Story',
+        'about_hero_subtitle': 'Born in Ghana. Built for Sneakerheads.',
+        'about_story_title': 'How we started',
+        'about_story_content': '',
+        'about_story_image': '',
+        'about_founder_name': '',
+        'about_founder_title': '',
+        'about_mission1_title': 'Our Mission',
+        'about_mission1_content': '',
+        'about_mission2_title': 'Our Vision',
+        'about_mission2_content': '',
+        'about_cta_title': 'Ready to step up?',
+        'about_cta_subtitle': 'Shop our latest drops.',
+        # Contact page
+        'contact_hero_title': 'Get in Touch',
+        'contact_hero_subtitle': 'We\'d love to hear from you.',
+        'contact_hours': 'Mon – Sat: 9am – 6pm',
+        'contact_whatsapp_hours': 'Mon – Sun: 8am – 9pm',
+        'contact_map_link': '',
+        'contact_team_json': '[]',
+        # SEO
+        'seo_title': 'Slidin GH — Premium Sneakers',
+        'seo_description': 'Shop authentic sneakers in Ghana. Fast delivery.',
+        'seo_keywords': 'sneakers, shoes, ghana, nike, adidas',
+        'seo_og_image': '',
+        'seo_google_analytics': '',
     }
 
     @classmethod
@@ -269,3 +353,80 @@ class SiteSettings(db.Model):
             if not cls.query.get(key):
                 db.session.add(cls(key=key, value=value))
         db.session.commit()
+
+
+class Banner(db.Model):
+    """Promotional banners with optional date scheduling."""
+    __tablename__ = 'banners'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(30), default='promotional')  # promotional | announcement | warning
+    title = db.Column(db.String(200))
+    subtitle = db.Column(db.String(500))
+    image_url = db.Column(db.String(500))
+    background_color = db.Column(db.String(10), default='#000000')
+    text_color = db.Column(db.String(10), default='#FFFFFF')
+    button_text = db.Column(db.String(100))
+    button_url = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)
+    position = db.Column(db.String(20), default='top')  # top | bottom | homepage
+    sort_order = db.Column(db.Integer, default=0)
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def is_live(self):
+        now = datetime.utcnow()
+        if not self.is_active:
+            return False
+        if self.start_date and now < self.start_date:
+            return False
+        if self.end_date and now > self.end_date:
+            return False
+        return True
+
+
+class Page(db.Model):
+    """CMS static pages (About, Contact, Privacy, FAQs, etc.)"""
+    __tablename__ = 'pages'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(220), unique=True, nullable=False)
+    content = db.Column(db.Text)
+    status = db.Column(db.String(20), default='draft')  # draft | published
+    seo_title = db.Column(db.String(200))
+    seo_description = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class CouponCode(db.Model):
+    """Discount coupons applied at checkout."""
+    __tablename__ = 'coupon_codes'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(200))
+    discount_type = db.Column(db.String(20), default='percent')  # percent | fixed
+    discount_value = db.Column(db.Numeric(10, 2), nullable=False)
+    min_order_amount = db.Column(db.Numeric(10, 2), default=0)
+    max_uses = db.Column(db.Integer)
+    uses_count = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def is_valid(self):
+        now = datetime.utcnow()
+        if not self.is_active:
+            return False
+        if self.max_uses and self.uses_count >= self.max_uses:
+            return False
+        if self.start_date and now < self.start_date:
+            return False
+        if self.end_date and now > self.end_date:
+            return False
+        return True

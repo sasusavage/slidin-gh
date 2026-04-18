@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ page.seo_title or page.title }} — {{ site.site_name }}{% endblock %}
+{% block meta_desc %}{{ page.seo_description or site.seo_description }}{% endblock %}
+
+{% block content %}
+<div class="px" style="max-width:780px;margin:80px auto;padding-bottom:80px;">
+  <h1 style="font-size:clamp(1.8rem,5vw,3rem);font-weight:700;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:40px;">{{ page.title }}</h1>
+  <div class="prose">{{ page.content|safe }}</div>
+</div>
+
+<style>
+.prose { font-size:0.95rem;line-height:1.8;color:#222; }
+.prose h2 { font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:2em 0 0.8em; }
+.prose h3 { font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:1.6em 0 0.6em; }
+.prose p { margin-bottom:1.2em; }
+.prose a { text-decoration:underline; }
+.prose ul,
+.prose ol { padding-left:1.5em;margin-bottom:1.2em; }
+.prose li { margin-bottom:0.4em; }
+</style>
+{% endblock %}

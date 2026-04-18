@@ -1,0 +1,94 @@
+{% extends "admin/base.html" %}
+{% block title %}Coupons{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 360px;gap:40px;align-items:start;">
+
+  <!-- List -->
+  <div>
+    <h1 class="admin-page-title">Coupons</h1>
+    <table class="data-table">
+      <thead><tr><th>Code</th><th>Discount</th><th>Uses</th><th>Status</th><th>Expires</th><th></th></tr></thead>
+      <tbody>
+        {% for c in coupons %}
+        <tr>
+          <td><strong style="font-family:monospace;letter-spacing:0.1em;">{{ c.code }}</strong>
+            {% if c.description %}<br/><span style="font-size:0.73rem;color:#666;">{{ c.description }}</span>{% endif %}
+          </td>
+          <td>
+            {% if c.discount_type == 'percent' %}{{ c.discount_value|int }}%
+            {% else %}GH₵{{ c.discount_value }}{% endif %}
+            {% if c.min_order_amount > 0 %}<br/><span style="font-size:0.72rem;color:#aaa;">Min GH₵{{ c.min_order_amount|int }}</span>{% endif %}
+          </td>
+          <td>{{ c.uses_count }}{% if c.max_uses %} / {{ c.max_uses }}{% endif %}</td>
+          <td><span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ 'green' if c.is_valid else '#aaa' }};">{{ 'Active' if c.is_valid else 'Inactive' }}</span></td>
+          <td style="font-size:0.75rem;color:#666;">{{ c.end_date.strftime('%d %b %Y') if c.end_date else '—' }}</td>
+          <td style="display:flex;gap:8px;">
+            <button onclick="editCoupon({{ {'id':c.id,'code':c.code,'description':c.description or '','discount_type':c.discount_type,'discount_value':c.discount_value|float,'min_order_amount':c.min_order_amount|float,'max_uses':c.max_uses or '','is_active':c.is_active,'start_date':c.start_date.strftime('%Y-%m-%dT%H:%M') if c.start_date else '','end_date':c.end_date.strftime('%Y-%m-%dT%H:%M') if c.end_date else ''}|tojson|safe }})"
+               style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</button>
+            <form method="post" action="{{ url_for('admin.coupon_delete', coupon_id=c.id) }}" onsubmit="return confirm('Delete?')">
+              <button type="submit" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:red;background:none;border:none;cursor:pointer;">Del</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:#aaa;">No coupons yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form -->
+  <div style="border:1px solid var(--black);padding:28px;position:sticky;top:24px;">
+    <p id="coupon-form-title" style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:20px;">New Coupon</p>
+    <form method="post" action="{{ url_for('admin.coupon_save') }}">
+      <input type="hidden" name="id" id="c-id"/>
+      <div class="admin-field"><label>Code *</label><input type="text" name="code" id="c-code" required style="text-transform:uppercase;" placeholder="SUMMER20"/></div>
+      <div class="admin-field"><label>Description</label><input type="text" name="description" id="c-desc" placeholder="20% off summer collection"/></div>
+      <div class="admin-field"><label>Discount Type</label>
+        <select name="discount_type" id="c-type">
+          <option value="percent">Percent (%)</option>
+          <option value="fixed">Fixed amount (GH₵)</option>
+        </select>
+      </div>
+      <div class="admin-field"><label>Discount Value</label><input type="number" name="discount_value" id="c-val" step="0.01" min="0" required placeholder="20"/></div>
+      <div class="admin-field"><label>Min Order Amount</label><input type="number" name="min_order_amount" id="c-min" step="0.01" min="0" value="0"/></div>
+      <div class="admin-field"><label>Max Uses <span style="font-weight:400;text-transform:none;">(blank = unlimited)</span></label><input type="number" name="max_uses" id="c-max" min="1"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="admin-field"><label>Start Date</label><input type="datetime-local" name="start_date" id="c-start"/></div>
+        <div class="admin-field"><label>End Date</label><input type="datetime-local" name="end_date" id="c-end"/></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+        <input type="checkbox" name="is_active" id="c-active" value="1" checked/>
+        <label for="c-active" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Active</label>
+      </div>
+      <button type="submit" class="btn btn--black btn--full">Save Coupon</button>
+      <button type="button" onclick="resetCouponForm()" style="margin-top:8px;width:100%;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;background:none;border:1px solid #ccc;padding:10px;cursor:pointer;">Clear Form</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function editCoupon(c) {
+  document.getElementById('coupon-form-title').textContent = 'Edit Coupon';
+  document.getElementById('c-id').value = c.id;
+  document.getElementById('c-code').value = c.code;
+  document.getElementById('c-desc').value = c.description;
+  document.getElementById('c-type').value = c.discount_type;
+  document.getElementById('c-val').value = c.discount_value;
+  document.getElementById('c-min').value = c.min_order_amount;
+  document.getElementById('c-max').value = c.max_uses;
+  document.getElementById('c-active').checked = c.is_active;
+  document.getElementById('c-start').value = c.start_date;
+  document.getElementById('c-end').value = c.end_date;
+}
+function resetCouponForm() {
+  document.getElementById('coupon-form-title').textContent = 'New Coupon';
+  document.getElementById('c-id').value = '';
+  ['c-code','c-desc','c-val','c-max','c-start','c-end'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-min').value = '0';
+  document.getElementById('c-type').value = 'percent';
+  document.getElementById('c-active').checked = true;
+}
+</script>
+{% endblock %}

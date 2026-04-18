@@ -1,0 +1,268 @@
+{% extends "admin/base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Settings</h1>
+
+<!-- Tab nav -->
+<div class="stab-nav" style="display:flex;gap:0;border-bottom:1px solid var(--black);margin-bottom:32px;overflow-x:auto;">
+  {% for t_id, t_label in [('general','General'),('appearance','Appearance'),('homepage','Homepage'),('pages','Pages & About'),('headerfooter','Header & Footer'),('seo','SEO')] %}
+  <a href="?tab={{ t_id }}"
+     style="padding:12px 20px;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;white-space:nowrap;border-bottom:2px solid {{ 'var(--black)' if tab==t_id else 'transparent' }};margin-bottom:-1px;">
+    {{ t_label }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- ════════════════════ GENERAL ════════════════════ -->
+{% if tab == 'general' %}
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_tab" value="general"/>
+
+  <div class="settings-grid">
+    <div class="settings-card">
+      <p class="settings-card__title">Store Information</p>
+      <div class="admin-field"><label>Store Name</label><input type="text" name="site_name" value="{{ s.site_name }}"/></div>
+      <div class="admin-field"><label>Tagline</label><input type="text" name="site_tagline" value="{{ s.site_tagline }}"/></div>
+      <div class="admin-field"><label>Currency Code</label><input type="text" name="currency" value="{{ s.currency }}" style="max-width:100px;"/></div>
+      <div class="admin-field"><label>Currency Symbol</label><input type="text" name="currency_symbol" value="{{ s.currency_symbol }}" style="max-width:100px;"/></div>
+    </div>
+
+    <div class="settings-card">
+      <p class="settings-card__title">Branding</p>
+      {% if s.site_logo %}<img src="{{ s.site_logo }}" style="max-height:48px;margin-bottom:12px;display:block;"/>{% endif %}
+      <div class="admin-field"><label>Logo — upload new</label><input type="file" name="site_logo_file" accept="image/*"/></div>
+      <div class="admin-field"><label>Or Logo URL</label><input type="text" name="site_logo" value="{{ s.site_logo }}" placeholder="/static/uploads/logo.png"/></div>
+      {% if s.site_favicon %}<img src="{{ s.site_favicon }}" style="max-height:32px;margin-bottom:8px;display:block;"/>{% endif %}
+      <div class="admin-field"><label>Favicon — upload new</label><input type="file" name="site_favicon_file" accept="image/*"/></div>
+      <div class="admin-field"><label>Or Favicon URL</label><input type="text" name="site_favicon" value="{{ s.site_favicon }}"/></div>
+    </div>
+
+    <div class="settings-card">
+      <p class="settings-card__title">Contact</p>
+      <div class="admin-field"><label>Email</label><input type="email" name="contact_email" value="{{ s.contact_email }}"/></div>
+      <div class="admin-field"><label>Phone</label><input type="text" name="contact_phone" value="{{ s.contact_phone }}"/></div>
+      <div class="admin-field"><label>Address</label><textarea name="contact_address" rows="2">{{ s.contact_address }}</textarea></div>
+    </div>
+
+    <div class="settings-card">
+      <p class="settings-card__title">Social Media</p>
+      {% for key, label in [('social_instagram','Instagram'),('social_facebook','Facebook'),('social_twitter','Twitter / X'),('social_tiktok','TikTok'),('social_whatsapp','WhatsApp number')] %}
+      <div class="admin-field"><label>{{ label }}</label><input type="text" name="{{ key }}" value="{{ s[key] }}" placeholder="https://…"/></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn--black" style="margin-top:8px;">Save General Settings</button>
+</form>
+
+<!-- ════════════════════ APPEARANCE ════════════════════ -->
+{% elif tab == 'appearance' %}
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_tab" value="appearance"/>
+  <div class="settings-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">
+    <div class="settings-card">
+      <p class="settings-card__title">Brand Colors</p>
+      {% for key, label in [('primary_color','Primary'),('secondary_color','Secondary'),('accent_color','Accent')] %}
+      <div class="admin-field" style="display:flex;align-items:center;gap:12px;">
+        <div>
+          <label>{{ label }}</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+            <input type="color" name="{{ key }}" value="{{ s[key] }}" style="width:48px;height:36px;padding:2px;cursor:pointer;border:1px solid #ccc;"/>
+            <input type="text" name="{{ key }}" value="{{ s[key] }}" style="width:100px;font-size:0.8rem;" oninput="this.previousElementSibling.value=this.value"/>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <button type="submit" class="btn btn--black" style="margin-top:24px;">Save Appearance</button>
+</form>
+
+<!-- ════════════════════ HOMEPAGE ════════════════════ -->
+{% elif tab == 'homepage' %}
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_tab" value="homepage"/>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Announcement Bar</p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;">
+      <div class="admin-field" style="margin:0;"><label>Message</label><input type="text" name="announcement_bar_text" value="{{ s.announcement_bar_text }}" placeholder="Free delivery on orders over GH₵500"/></div>
+      <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px;">
+        <input type="checkbox" id="ann" name="announcement_bar_active" value="true" {% if s.announcement_bar_active=='true' %}checked{% endif %}/>
+        <label for="ann" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Active</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Hero Section</p>
+    <div class="settings-grid">
+      <div class="admin-field"><label>Hero Style</label>
+        <select name="hero_style"><option value="balenciaga" {% if s.hero_style=='balenciaga' %}selected{% endif %}>Balenciaga — full-screen editorial</option><option value="puma" {% if s.hero_style=='puma' %}selected{% endif %}>Puma — split text / media</option></select>
+      </div>
+      <div class="admin-field"><label>Media Type</label>
+        <select name="hero_media_type"><option value="image" {% if s.hero_media_type=='image' %}selected{% endif %}>Image</option><option value="video" {% if s.hero_media_type=='video' %}selected{% endif %}>Video</option></select>
+      </div>
+      <div class="admin-field"><label>Tag / Label</label><input type="text" name="hero_label" value="{{ s.hero_label }}"/></div>
+      <div class="admin-field"><label>Title</label><input type="text" name="hero_title" value="{{ s.hero_title }}"/></div>
+      <div class="admin-field" style="grid-column:span 2;"><label>Sub-headline</label><textarea name="hero_subheadline" rows="2">{{ s.hero_subheadline }}</textarea></div>
+      <div class="admin-field"><label>Primary CTA Text</label><input type="text" name="hero_cta_primary_text" value="{{ s.hero_cta_primary_text }}"/></div>
+      <div class="admin-field"><label>Primary CTA URL</label><input type="text" name="hero_cta_primary_url" value="{{ s.hero_cta_primary_url }}"/></div>
+      <div class="admin-field"><label>Secondary CTA Text</label><input type="text" name="hero_cta_secondary_text" value="{{ s.hero_cta_secondary_text }}"/></div>
+      <div class="admin-field"><label>Secondary CTA URL</label><input type="text" name="hero_cta_secondary_url" value="{{ s.hero_cta_secondary_url }}"/></div>
+    </div>
+    <div style="margin-top:20px;">
+      {% if s.hero_media_url %}<img src="{{ s.hero_media_url }}" style="max-height:120px;max-width:100%;object-fit:cover;margin-bottom:10px;display:block;" alt="hero"/>{% endif %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="admin-field" style="margin:0;"><label>Upload Hero Image / Video</label><input type="file" name="hero_media_file" accept="image/*,video/*"/></div>
+        <div class="admin-field" style="margin:0;"><label>Or paste URL</label><input type="text" name="hero_media_url" value="{{ s.hero_media_url }}"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Floating Badge <span style="font-weight:400;text-transform:none;font-size:0.7rem;">(overlay on hero)</span></p>
+    <div class="settings-grid">
+      <div class="admin-field"><label>Badge Label</label><input type="text" name="hero_badge_label" value="{{ s.hero_badge_label }}" placeholder="Exclusive Offer"/></div>
+      <div class="admin-field"><label>Badge Main Text</label><input type="text" name="hero_badge_text" value="{{ s.hero_badge_text }}" placeholder="25% Off"/></div>
+      <div class="admin-field"><label>Badge Sub-text</label><input type="text" name="hero_badge_subtext" value="{{ s.hero_badge_subtext }}"/></div>
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Hero Stats <span style="font-weight:400;text-transform:none;font-size:0.7rem;">(3 social-proof numbers)</span></p>
+    <div class="settings-grid">
+      {% for n in [1,2,3] %}
+      <div class="admin-field"><label>Stat {{ n }} — Title</label><input type="text" name="hero_stat{{ n }}_title" value="{{ s['hero_stat'~n~'_title'] }}" placeholder="500+"/></div>
+      <div class="admin-field"><label>Stat {{ n }} — Description</label><input type="text" name="hero_stat{{ n }}_desc" value="{{ s['hero_stat'~n~'_desc'] }}" placeholder="Happy customers"/></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Trust Features <span style="font-weight:400;text-transform:none;font-size:0.7rem;">(4 icons below hero)</span></p>
+    <div class="settings-grid">
+      {% for n in [1,2,3,4] %}
+      <div style="border:1px solid #eee;padding:16px;">
+        <p style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:12px;">Feature {{ n }}</p>
+        <div class="admin-field"><label>Icon class <a href="https://remixicon.com" target="_blank" style="font-weight:400;text-transform:none;">(remixicon)</a></label><input type="text" name="feature{{ n }}_icon" value="{{ s['feature'~n~'_icon'] }}" placeholder="ri-truck-line"/></div>
+        <div class="admin-field"><label>Title</label><input type="text" name="feature{{ n }}_title" value="{{ s['feature'~n~'_title'] }}"/></div>
+        <div class="admin-field"><label>Description</label><input type="text" name="feature{{ n }}_desc" value="{{ s['feature'~n~'_desc'] }}"/></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn--black">Save Homepage Settings</button>
+</form>
+
+<!-- ════════════════════ PAGES / ABOUT / CONTACT ════════════════════ -->
+{% elif tab == 'pages' %}
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_tab" value="pages"/>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">About Page</p>
+    <div class="settings-grid">
+      <div class="admin-field"><label>Hero Title</label><input type="text" name="about_hero_title" value="{{ s.about_hero_title }}"/></div>
+      <div class="admin-field"><label>Hero Subtitle</label><input type="text" name="about_hero_subtitle" value="{{ s.about_hero_subtitle }}"/></div>
+      <div class="admin-field"><label>Story Section Title</label><input type="text" name="about_story_title" value="{{ s.about_story_title }}"/></div>
+      <div class="admin-field" style="grid-column:span 2;"><label>Story Content</label><textarea name="about_story_content" rows="4">{{ s.about_story_content }}</textarea></div>
+      <div class="admin-field"><label>Story Image — upload</label><input type="file" name="about_story_image_file" accept="image/*"/></div>
+      <div class="admin-field"><label>Or Story Image URL</label><input type="text" name="about_story_image" value="{{ s.about_story_image }}"/></div>
+      <div class="admin-field"><label>Founder Name</label><input type="text" name="about_founder_name" value="{{ s.about_founder_name }}"/></div>
+      <div class="admin-field"><label>Founder Title / Role</label><input type="text" name="about_founder_title" value="{{ s.about_founder_title }}"/></div>
+      <div class="admin-field"><label>Mission 1 Title</label><input type="text" name="about_mission1_title" value="{{ s.about_mission1_title }}"/></div>
+      <div class="admin-field"><label>Mission 1 Content</label><textarea name="about_mission1_content" rows="2">{{ s.about_mission1_content }}</textarea></div>
+      <div class="admin-field"><label>Mission 2 Title</label><input type="text" name="about_mission2_title" value="{{ s.about_mission2_title }}"/></div>
+      <div class="admin-field"><label>Mission 2 Content</label><textarea name="about_mission2_content" rows="2">{{ s.about_mission2_content }}</textarea></div>
+      <div class="admin-field"><label>CTA Title</label><input type="text" name="about_cta_title" value="{{ s.about_cta_title }}"/></div>
+      <div class="admin-field"><label>CTA Subtitle</label><input type="text" name="about_cta_subtitle" value="{{ s.about_cta_subtitle }}"/></div>
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Contact Page</p>
+    <div class="settings-grid">
+      <div class="admin-field"><label>Hero Title</label><input type="text" name="contact_hero_title" value="{{ s.contact_hero_title }}"/></div>
+      <div class="admin-field"><label>Hero Subtitle</label><input type="text" name="contact_hero_subtitle" value="{{ s.contact_hero_subtitle }}"/></div>
+      <div class="admin-field"><label>Business Hours</label><input type="text" name="contact_hours" value="{{ s.contact_hours }}" placeholder="Mon – Sat: 9am – 6pm"/></div>
+      <div class="admin-field"><label>WhatsApp Hours</label><input type="text" name="contact_whatsapp_hours" value="{{ s.contact_whatsapp_hours }}"/></div>
+      <div class="admin-field" style="grid-column:span 2;"><label>Google Maps Link</label><input type="text" name="contact_map_link" value="{{ s.contact_map_link }}" placeholder="https://maps.google.com/…"/></div>
+      <div class="admin-field" style="grid-column:span 2;">
+        <label>Team Contacts <span style="font-weight:400;text-transform:none;">(JSON: [{name, phone, role}])</span></label>
+        <textarea name="contact_team_json" rows="4" style="font-family:monospace;font-size:0.8rem;">{{ s.contact_team_json }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn--black">Save Page Settings</button>
+</form>
+
+<!-- ════════════════════ HEADER & FOOTER ════════════════════ -->
+{% elif tab == 'headerfooter' %}
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_tab" value="headerfooter"/>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Header</p>
+    <div class="admin-field" style="max-width:200px;display:flex;align-items:center;gap:12px;">
+      <input type="checkbox" id="hdr-search" name="header_show_search" value="true" {% if s.header_show_search=='true' %}checked{% endif %}/>
+      <label for="hdr-search" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Show Search Bar</label>
+    </div>
+    <div class="admin-field" style="margin-top:16px;">
+      <label>Navigation Links <span style="font-weight:400;text-transform:none;">(JSON: [{label, href}])</span></label>
+      <textarea name="header_nav_links_json" rows="4" style="font-family:monospace;font-size:0.8rem;">{{ s.header_nav_links_json }}</textarea>
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom:24px;">
+    <p class="settings-card__title">Footer</p>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <input type="checkbox" id="ftr-nl" name="footer_show_newsletter" value="true" {% if s.footer_show_newsletter=='true' %}checked{% endif %}/>
+      <label for="ftr-nl" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;">Show Newsletter Section</label>
+    </div>
+    <div class="settings-grid">
+      <div class="admin-field"><label>Newsletter Title</label><input type="text" name="footer_newsletter_title" value="{{ s.footer_newsletter_title }}"/></div>
+      <div class="admin-field"><label>Newsletter Subtitle</label><input type="text" name="footer_newsletter_subtitle" value="{{ s.footer_newsletter_subtitle }}"/></div>
+      <div class="admin-field"><label>Copyright Text</label><input type="text" name="footer_copyright_text" value="{{ s.footer_copyright_text }}"/></div>
+    </div>
+    <div class="settings-grid" style="margin-top:16px;">
+      {% for n in [1,2,3] %}
+      <div>
+        <div class="admin-field"><label>Column {{ n }} Title</label><input type="text" name="footer_col{{ n }}_title" value="{{ s['footer_col'~n~'_title'] }}"/></div>
+        <div class="admin-field"><label>Column {{ n }} Links <span style="font-weight:400;text-transform:none;">(JSON)</span></label><textarea name="footer_col{{ n }}_links_json" rows="4" style="font-family:monospace;font-size:0.75rem;">{{ s['footer_col'~n~'_links_json'] }}</textarea></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn--black">Save Header & Footer</button>
+</form>
+
+<!-- ════════════════════ SEO ════════════════════ -->
+{% elif tab == 'seo' %}
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_tab" value="seo"/>
+  <div class="settings-card">
+    <p class="settings-card__title">Search Engine Optimisation</p>
+    <div class="settings-grid">
+      <div class="admin-field"><label>Site Title</label><input type="text" name="seo_title" value="{{ s.seo_title }}"/></div>
+      <div class="admin-field"><label>Meta Description <span style="font-weight:400;">(max 160 chars)</span></label><input type="text" name="seo_description" value="{{ s.seo_description }}" maxlength="160"/></div>
+      <div class="admin-field" style="grid-column:span 2;"><label>Keywords <span style="font-weight:400;">(comma-separated)</span></label><input type="text" name="seo_keywords" value="{{ s.seo_keywords }}"/></div>
+      <div class="admin-field"><label>OG Image — upload</label><input type="file" name="seo_og_image_file" accept="image/*"/></div>
+      <div class="admin-field"><label>Or OG Image URL</label><input type="text" name="seo_og_image" value="{{ s.seo_og_image }}"/></div>
+      <div class="admin-field"><label>Google Analytics ID</label><input type="text" name="seo_google_analytics" value="{{ s.seo_google_analytics }}" placeholder="G-XXXXXXXXXX"/></div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn--black" style="margin-top:24px;">Save SEO Settings</button>
+</form>
+{% endif %}
+
+<style>
+.settings-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px; }
+.settings-card { border:1px solid var(--black);padding:24px; }
+.settings-card__title { font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:20px; }
+</style>
+{% endblock %}
