@@ -5,10 +5,70 @@
 {% block content %}
 <div class="checkout-grid" style="margin-top:56px;">
 
-  <!-- Form -->
+  <!-- ── Order Summary (shown FIRST on mobile via CSS order) ── -->
+  <div class="checkout-summary">
+    <p class="checkout-section-title">
+      Your Order
+      <span style="font-weight:400;font-size:0.6rem;margin-left:8px;color:#888;">
+        ({{ cart_items|sum(attribute='quantity') }} item{{ 's' if cart_items|sum(attribute='quantity') != 1 }})
+      </span>
+    </p>
+
+    {% if cart_items %}
+    {% for item in cart_items %}
+    <div class="summary-item">
+      <img class="summary-item__img"
+           src="{{ item.image }}" alt="{{ item.name }}"
+           onerror="this.src='/static/img/placeholder.jpg';this.onerror=null;"/>
+      <div>
+        <p class="summary-item__name">{{ item.name }}</p>
+        <p class="summary-item__meta">
+          {% if item.size %}Size {{ item.size }}{% endif %}
+          {% if item.size and item.color %} &middot; {% endif %}
+          {% if item.color %}{{ item.color }}{% endif %}
+          &nbsp;&times; {{ item.quantity }}
+        </p>
+        <p class="summary-item__meta" style="color:#333;font-weight:600;margin-top:4px;">
+          {{ item.price|currency }} each
+        </p>
+      </div>
+      <span class="summary-item__price">{{ (item.price * item.quantity)|currency }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="font-size:0.8rem;color:#aaa;padding:16px 0;">Your cart is empty.</p>
+    {% endif %}
+
+    <div class="summary-totals">
+      <div class="summary-row">
+        <span>Subtotal</span><span>{{ subtotal|currency }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Delivery</span>
+        <span>{% if delivery_fee == 0 %}
+          <span style="color:green;">Free</span>
+        {% else %}{{ delivery_fee|currency }}{% endif %}</span>
+      </div>
+      <div class="summary-row summary-row--total">
+        <span>Total</span><span>{{ total|currency }}</span>
+      </div>
+    </div>
+
+    {% if delivery_fee == 0 %}
+    <p style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:green;margin-top:12px;">
+      ✓ Free delivery applied
+    </p>
+    {% else %}
+    <p style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#888;margin-top:12px;">
+      Free delivery on orders over GH₵500
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- ── Delivery Form ── -->
   <div class="checkout-form">
     <h1 style="font-size:1.4rem;font-weight:700;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:40px;">
-      Checkout
+      Delivery Details
     </h1>
 
     {% if error %}
@@ -78,45 +138,6 @@
 
       <button type="submit" class="btn btn--black btn--full btn--lg">Place Order</button>
     </form>
-  </div>
-
-  <!-- Summary -->
-  <div class="checkout-summary">
-    <p class="checkout-section-title">Order Summary</p>
-
-    {% for item in cart_items %}
-    <div class="summary-item">
-      <img class="summary-item__img" src="{{ item.image }}" alt="{{ item.name }}"/>
-      <div>
-        <p class="summary-item__name">{{ item.name }}</p>
-        <p class="summary-item__meta">
-          {% if item.size %}{{ item.size }}{% endif %}
-          {% if item.color %} · {{ item.color }}{% endif %}
-          &nbsp;× {{ item.quantity }}
-        </p>
-      </div>
-      <span class="summary-item__price">{{ (item.price * item.quantity)|currency }}</span>
-    </div>
-    {% endfor %}
-
-    <div class="summary-totals">
-      <div class="summary-row">
-        <span>Subtotal</span><span>{{ subtotal|currency }}</span>
-      </div>
-      <div class="summary-row">
-        <span>Delivery</span>
-        <span>{% if delivery_fee == 0 %}Free{% else %}{{ delivery_fee|currency }}{% endif %}</span>
-      </div>
-      <div class="summary-row summary-row--total">
-        <span>Total</span><span>{{ total|currency }}</span>
-      </div>
-    </div>
-
-    {% if delivery_fee == 0 %}
-    <p style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--grey-3);margin-top:16px;">
-      Free delivery on orders over GH₵500
-    </p>
-    {% endif %}
   </div>
 
 </div>
