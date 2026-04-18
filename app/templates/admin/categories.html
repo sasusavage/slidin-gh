@@ -42,7 +42,7 @@
           <td>
             <div style="display:flex;gap:8px;align-items:center;">
               <button
-                onclick="editCategory({{ {'id':cat.id,'name':cat.name,'description':cat.description or '','position':cat.position,'is_active':cat.is_active,'image_url':cat.image_url or ''}|tojson|safe }})"
+                onclick='editCategory({{ {"id":cat.id,"name":cat.name,"description":cat.description or "","position":cat.position,"is_active":cat.is_active,"image_url":cat.image_url or ""}|tojson|safe }})'
                 style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;">Edit</button>
               {% if cat.image_url %}
               <form method="post" action="{{ url_for('admin.category_image_delete', cat_id=cat.id) }}"
