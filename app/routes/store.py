@@ -23,6 +23,9 @@ def shop():
     q = request.args.get('q', '').strip()
     gender = request.args.get('gender', '')
     category_slug = request.args.get('category', '')
+    brand = request.args.get('brand', '').strip()
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
     sort = request.args.get('sort', 'newest')
     page = request.args.get('page', 1, type=int)
 
@@ -36,6 +39,12 @@ def shop():
         cat = Category.query.filter_by(slug=category_slug).first()
         if cat:
             query = query.filter_by(category_id=cat.id)
+    if brand:
+        query = query.filter(Product.brand.ilike(brand))
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
 
     if sort == 'price_asc':
         query = query.order_by(Product.price.asc())
@@ -46,15 +55,47 @@ def shop():
 
     pagination = query.paginate(page=page, per_page=12, error_out=False)
     categories = Category.query.filter_by(is_active=True).order_by(Category.position).all()
+    brands = [b[0] for b in db.session.query(Product.brand)
+              .filter(Product.brand.isnot(None), Product.brand != '',
+                      Product.status == 'active')
+              .distinct().order_by(Product.brand).all()]
 
     return render_template('shop.html',
                            products=pagination.items,
                            pagination=pagination,
                            categories=categories,
+                           brands=brands,
                            current_q=q,
                            current_gender=gender,
                            current_category=category_slug,
+                           current_brand=brand,
+                           current_min_price=min_price,
+                           current_max_price=max_price,
                            current_sort=sort)
+
+
+@store_bp.route('/wishlist')
+def wishlist():
+    """Wishlist page — items live in the browser's localStorage (no account needed)."""
+    return render_template('wishlist.html')
+
+
+@store_bp.route('/api/products-by-ids')
+def products_by_ids():
+    """Return minimal product data for a list of IDs (wishlist + recently viewed)."""
+    ids = [i for i in (request.args.get('ids') or '').split(',') if i]
+    if not ids:
+        return jsonify({'products': []})
+    products = Product.query.filter(Product.id.in_(ids[:60]),
+                                     Product.status == 'active').all()
+    data = [{
+        'id': p.id, 'slug': p.slug, 'name': p.name, 'brand': p.brand or '',
+        'price': float(p.price),
+        'compare_at_price': float(p.compare_at_price) if p.compare_at_price else None,
+        'image': p.primary_image,
+        'url': url_for('store.product_detail', slug=p.slug),
+    } for p in products]
+    return jsonify({'products': data})
 
 
 @store_bp.route('/product/<slug>')

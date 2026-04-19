@@ -124,9 +124,14 @@ def update_order_status(order_id):
     order = Order.query.get_or_404(order_id)
     new_status = request.form.get('status')
     valid = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
-    if new_status in valid:
+    if new_status in valid and new_status != order.status:
         order.status = new_status
         db.session.commit()
+        try:
+            from app.notifications import send_status_update
+            send_status_update(order)
+        except Exception:
+            pass
     return redirect(url_for('admin.order_detail', order_id=order_id))
 
 

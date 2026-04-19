@@ -423,6 +423,21 @@ class Page(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class NotificationLog(db.Model):
+    """Log of every SMS/email sent, for debugging and retry."""
+    __tablename__ = 'notification_logs'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    channel = db.Column(db.String(20), nullable=False)   # sms | email
+    recipient = db.Column(db.String(200), nullable=False)
+    subject = db.Column(db.String(200))
+    message = db.Column(db.Text, nullable=False)
+    order_id = db.Column(db.String(36), db.ForeignKey('orders.id'))
+    status = db.Column(db.String(20), default='queued')   # queued | logged | sent | failed
+    provider = db.Column(db.String(30))
+    error = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class CouponCode(db.Model):
     """Discount coupons applied at checkout."""
     __tablename__ = 'coupon_codes'

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
 from app.models import Order, OrderItem, Customer, Product, ProductVariant
 from app import db
+from app.notifications import send_order_confirmation
 from datetime import datetime
 import random, string
 
@@ -123,7 +124,32 @@ def place_order():
     session.pop('cart', None)
     session.modified = True
 
+    # Fire SMS + email confirmation (non-blocking: logs on failure, won't break checkout)
+    try:
+        send_order_confirmation(order)
+    except Exception:
+        pass
+
     return redirect(url_for('orders.order_success', order_number=order.order_number))
+
+
+@orders_bp.route('/api/customer-lookup')
+def customer_lookup():
+    """Returning-customer auto-fill at checkout. Look up by phone."""
+    phone = (request.args.get('phone') or '').strip()
+    if not phone or len(phone) < 7:
+        return jsonify({'found': False})
+    customer = Customer.query.filter_by(phone=phone).first()
+    if not customer:
+        return jsonify({'found': False})
+    return jsonify({
+        'found': True,
+        'full_name': customer.full_name,
+        'email': customer.email or '',
+        'address': customer.address_line1 or '',
+        'city': customer.city or '',
+        'region': customer.region or '',
+    })
 
 
 @orders_bp.route('/order/success/<order_number>')

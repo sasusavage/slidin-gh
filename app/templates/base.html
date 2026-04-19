@@ -103,8 +103,27 @@
     </button>
   </div>
 
+  {% set cart_items = session.get('cart', []) %}
+  {% set _cart_sub = namespace(v=0) %}
+  {% for _i in cart_items %}{% set _cart_sub.v = _cart_sub.v + _i.price * _i.quantity %}{% endfor %}
+  {% set ship_target = 500 %}
+  {% if cart_items %}
+  <div class="free-ship-bar">
+    {% if _cart_sub.v >= ship_target %}
+    <p class="free-ship-bar__msg free-ship-bar__msg--done">✓ Free delivery unlocked</p>
+    <div class="free-ship-bar__track"><div class="free-ship-bar__fill" style="width:100%;"></div></div>
+    {% else %}
+    <p class="free-ship-bar__msg">
+      Add <strong>{{ (ship_target - _cart_sub.v)|currency }}</strong> more for free delivery
+    </p>
+    <div class="free-ship-bar__track">
+      <div class="free-ship-bar__fill" style="width:{{ ((_cart_sub.v / ship_target) * 100)|round(0) }}%;"></div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="cart-drawer__body" id="cart-body">
-    {% set cart_items = session.get('cart', []) %}
     {% if cart_items %}
       {% for item in cart_items %}
       <div class="cart-item">

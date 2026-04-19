@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Wishlist — Slidein GH{% endblock %}
+{% block search_bar %}{% endblock %}
+
+{% block content %}
+<div style="margin-top:56px;">
+
+  <div class="shop-header">
+    <h1 class="shop-title">My Wishlist</h1>
+    <span id="wishlist-count-label" style="font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--grey-3);">0 items</span>
+  </div>
+
+  <div id="wishlist-empty" style="padding:96px 24px;text-align:center;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.2" width="56" height="56" style="margin:0 auto 16px;display:block;">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+    <p style="font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--grey-3);margin-bottom:8px;">
+      Your wishlist is empty
+    </p>
+    <p style="font-size:0.7rem;color:#888;margin-bottom:24px;">
+      Tap the heart on any product to save it here.
+    </p>
+    <a href="{{ url_for('store.shop') }}" class="btn btn--black">Shop Now</a>
+  </div>
+
+  <div class="product-grid" id="wishlist-grid" style="display:none;border:1px solid var(--black);margin:1px 1px 0;"></div>
+
+</div>
+
+<script>
+(function() {
+  var KEY = 'slidein_wishlist';
+  var ids = [];
+  try { ids = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+
+  var grid = document.getElementById('wishlist-grid');
+  var empty = document.getElementById('wishlist-empty');
+  var countLabel = document.getElementById('wishlist-count-label');
+
+  if (!ids.length) { countLabel.textContent = '0 items'; return; }
+
+  fetch('/api/products-by-ids?ids=' + encodeURIComponent(ids.join(',')))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var products = data.products || [];
+      if (!products.length) return;
+      empty.style.display = 'none';
+      grid.style.display = 'grid';
+      countLabel.textContent = products.length + ' item' + (products.length !== 1 ? 's' : '');
+      grid.innerHTML = products.map(function(p) {
+        var compare = p.compare_at_price
+          ? '<span class="product-card__compare">GH\u20B5' + p.compare_at_price.toFixed(2) + '</span>' : '';
+        return '<a href="' + p.url + '" class="product-card">' +
+          '<div class="product-card__img-wrap">' +
+            '<img class="product-card__img" src="' + p.image + '" alt="' + p.name + '" loading="lazy"/>' +
+            '<button class="product-card__wishlist is-active" data-wishlist-id="' + p.id + '" aria-label="Remove from wishlist" onclick="event.preventDefault();event.stopPropagation();window.toggleWishlist(\'' + p.id + '\', this);">' +
+              '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' +
+            '</button>' +
+          '</div>' +
+          '<div class="product-card__info">' +
+            '<p class="product-card__name">' + (p.brand ? p.brand + ' — ' : '') + p.name + '</p>' +
+            '<p class="product-card__price">GH\u20B5' + p.price.toFixed(2) + ' ' + compare + '</p>' +
+          '</div>' +
+        '</a>';
+      }).join('');
+    });
+})();
+</script>
+{% endblock %}

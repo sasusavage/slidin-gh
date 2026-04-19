@@ -219,3 +219,124 @@ function showEmptyCart() {
 function formatPrice(n) {
   return 'GH₵' + parseFloat(n).toLocaleString('en-GH', { minimumFractionDigits: 2 });
 }
+
+// ── Wishlist (localStorage, no account needed) ──
+const WISHLIST_KEY = 'slidein_wishlist';
+
+function getWishlist() {
+  try { return JSON.parse(localStorage.getItem(WISHLIST_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveWishlist(ids) {
+  localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+}
+function isInWishlist(id) {
+  return getWishlist().indexOf(String(id)) !== -1;
+}
+
+window.toggleWishlist = function(id, btn) {
+  id = String(id);
+  const list = getWishlist();
+  const idx = list.indexOf(id);
+  if (idx === -1) {
+    list.push(id);
+    saveWishlist(list);
+    showToast('Saved to wishlist');
+    markHearts(id, true);
+  } else {
+    list.splice(idx, 1);
+    saveWishlist(list);
+    showToast('Removed from wishlist');
+    markHearts(id, false);
+    // If on wishlist page, remove the card
+    if (btn && btn.closest('.product-card') && window.location.pathname.indexOf('/wishlist') === 0) {
+      btn.closest('.product-card').remove();
+      const remaining = document.querySelectorAll('#wishlist-grid .product-card').length;
+      const label = document.getElementById('wishlist-count-label');
+      if (label) label.textContent = remaining + ' item' + (remaining !== 1 ? 's' : '');
+      if (remaining === 0) {
+        const grid = document.getElementById('wishlist-grid');
+        const empty = document.getElementById('wishlist-empty');
+        if (grid) grid.style.display = 'none';
+        if (empty) empty.style.display = 'block';
+      }
+    }
+  }
+};
+
+function markHearts(id, active) {
+  document.querySelectorAll('[data-wishlist-id="' + id + '"]').forEach(el => {
+    el.classList.toggle('is-active', active);
+  });
+}
+
+// Highlight all wishlist hearts on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const list = getWishlist();
+  list.forEach(id => markHearts(id, true));
+
+  // PDP heart (the big one in pdp__info)
+  const pdpHeart = document.querySelector('.wishlist-btn[data-wishlist-id]');
+  if (pdpHeart && !pdpHeart.dataset.bound) {
+    pdpHeart.dataset.bound = '1';
+    pdpHeart.addEventListener('click', () => {
+      window.toggleWishlist(pdpHeart.dataset.wishlistId, pdpHeart);
+    });
+  }
+});
+
+// ── Recently viewed (PDP tracker) ────────────
+const RECENT_KEY = 'slidein_recently_viewed';
+const RECENT_MAX = 8;
+
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function trackRecent(id) {
+  if (!id) return;
+  id = String(id);
+  let list = getRecent().filter(x => x !== id);
+  list.unshift(id);
+  list = list.slice(0, RECENT_MAX);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+}
+
+function renderRecentlyViewed() {
+  const section = document.getElementById('recently-viewed-section');
+  const grid = document.getElementById('recently-viewed-grid');
+  if (!section || !grid) return;
+  const currentId = document.querySelector('#add-to-cart')?.dataset.productId;
+  let ids = getRecent().filter(x => x !== String(currentId));
+  if (!ids.length) return;
+
+  fetch('/api/products-by-ids?ids=' + encodeURIComponent(ids.join(',')))
+    .then(r => r.json())
+    .then(data => {
+      const products = (data.products || []).slice(0, 4);
+      if (!products.length) return;
+      section.style.display = 'block';
+      grid.innerHTML = products.map(p =>
+        `<a href="${p.url}" class="product-card">
+          <div class="product-card__img-wrap">
+            <img class="product-card__img" src="${p.image}" alt="${p.name}" loading="lazy"/>
+          </div>
+          <div class="product-card__info">
+            <p class="product-card__name">${p.brand ? p.brand + ' — ' : ''}${p.name}</p>
+            <p class="product-card__price">${formatPrice(p.price)}</p>
+          </div>
+        </a>`
+      ).join('');
+    });
+}
+
+// On PDP: track current product, then render "recently viewed"
+document.addEventListener('DOMContentLoaded', () => {
+  const pdpHeart = document.querySelector('.wishlist-btn[data-wishlist-id]');
+  if (pdpHeart) {
+    const currentId = pdpHeart.dataset.wishlistId;
+    renderRecentlyViewed();        // render BEFORE tracking so current isn't listed
+    trackRecent(currentId);
+  }
+});
