@@ -32,7 +32,7 @@
   {% endfor %}
 
   <!-- Filters -->
-  <form method="get" style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+  <form method="get" class="shop-filter-form">
     {% if current_q %}<input type="hidden" name="q" value="{{ current_q }}"/>{% endif %}
     {% if current_gender %}<input type="hidden" name="gender" value="{{ current_gender }}"/>{% endif %}
     {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}"/>{% endif %}

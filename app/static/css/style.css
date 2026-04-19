@@ -1594,28 +1594,6 @@ ul, ol { list-style: none; }
   .footer__newsletter { grid-column: span 2; }
 }
 
-/* ═══════════════════════════════════════════
-   LIVE SALES POPUP
-═══════════════════════════════════════════ */
-.live-sale {
-  position: fixed;
-  left: 16px; bottom: 76px;
-  z-index: 80;
-  background: #fff;
-  border: 1px solid var(--grey-2);
-  box-shadow: 0 10px 32px rgba(0,0,0,0.15);
-  padding: 12px 16px;
-  max-width: 300px;
-  font-size: 0.76rem;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.35s, transform 0.35s;
-  pointer-events: none;
-}
-.live-sale.show { opacity: 1; transform: translateY(0); }
-@media (max-width: 520px) {
-  .live-sale { bottom: 72px; left: 8px; right: 8px; max-width: none; }
-}
 
 /* ═══════════════════════════════════════════
    COOKIE CONSENT
@@ -1697,3 +1675,113 @@ ul, ol { list-style: none; }
   font-variant-numeric: tabular-nums;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+/* ═══════════════════════════════════════════
+   SHOP FILTER FORM — responsive
+═══════════════════════════════════════════ */
+.shop-filter-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.shop-filter-form select,
+.shop-filter-form input[type="number"] {
+  border: 1px solid var(--grey-2);
+  padding: 7px 10px;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font);
+}
+.shop-filter-form input[type="number"] { width: 72px; }
+
+@media (max-width: 640px) {
+  .shop-header { flex-direction: column; align-items: flex-start; padding: 24px 16px 0; }
+  .filter-bar { padding: 0 16px 16px; flex-direction: column; align-items: stretch; gap: 6px; }
+  .shop-filter-form { margin-left: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .shop-filter-form select { width: 100%; }
+  .shop-filter-form input[type="number"] { width: 100%; }
+  .filter-chip { font-size: 0.68rem; }
+}
+
+/* ═══════════════════════════════════════════
+   COOKIE BANNER — sit above mobile bottom nav
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .cookie-banner { bottom: calc(64px + env(safe-area-inset-bottom) + 12px); }
+}
+
+/* ═══════════════════════════════════════════
+   FOOTER — single column on very small screens
+═══════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .footer__inner { grid-template-columns: 1fr; padding: 28px 16px; gap: 20px; }
+  .footer__newsletter { grid-column: span 1; }
+  #newsletter-form { flex-wrap: wrap; }
+  #newsletter-form input[type="email"] { width: 100%; }
+  #newsletter-form button { width: 100%; }
+  .footer__bottom { padding: 14px 16px; }
+}
+@media (max-width: 820px) and (min-width: 481px) {
+  .footer__inner { grid-template-columns: 1fr 1fr; }
+}
+
+/* ═══════════════════════════════════════════
+   CHECKOUT — stack field-row on small phones
+═══════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .field-row { grid-template-columns: 1fr; }
+  .checkout-form { padding: 24px 16px; }
+  .checkout-summary { padding: 24px 16px; }
+}
+
+/* ═══════════════════════════════════════════
+   CART DRAWER — tighter item layout on phones
+═══════════════════════════════════════════ */
+@media (max-width: 400px) {
+  .cart-item { grid-template-columns: 72px 1fr auto; gap: 10px; padding: 16px; }
+  .cart-item__img { width: 72px; height: 90px; }
+}
+
+/* ═══════════════════════════════════════════
+   PDP — tighter padding on small phones
+═══════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .pdp__info { padding: 20px 16px 40px; gap: 20px; }
+  .pdp__gallery { height: 75vw; }
+}
+
+/* ═══════════════════════════════════════════
+   NAV — tighter on very small screens
+═══════════════════════════════════════════ */
+@media (max-width: 360px) {
+  .nav { padding: 0 12px; }
+  .nav__logo { font-size: 0.75rem; }
+}
+
+/* ═══════════════════════════════════════════
+   HERO — responsive adjustments
+═══════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .hero__content { padding: 48px 16px; }
+  .hero-stats { flex-wrap: wrap; gap: 24px; padding: 24px 16px; }
+  .hero-badge { display: none; }
+  .trust-strip { grid-template-columns: 1fr 1fr; }
+}
+
+/* ═══════════════════════════════════════════
+   ADMIN — analytics chart responsive
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .admin-page-title { font-size: 1.1rem; margin-bottom: 20px; }
+  .stat-card__value { font-size: 1.4rem; }
+}
+
+/* ═══════════════════════════════════════════
+   GENERAL — prevent any horizontal overflow
+═══════════════════════════════════════════ */
+html, body { max-width: 100%; overflow-x: hidden; }

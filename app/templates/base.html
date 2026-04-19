@@ -210,9 +210,9 @@
     </div>
     <div class="footer__col footer__newsletter">
       <p class="footer__title">Get New Drops First</p>
-      <form id="newsletter-form" style="display:flex;gap:6px;margin-top:6px;">
+      <form id="newsletter-form" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
         <input type="email" id="newsletter-email" placeholder="Your email" required
-               style="flex:1;padding:10px;border:1px solid var(--grey-2);font-size:0.78rem;"/>
+               style="flex:1;min-width:120px;padding:10px;border:1px solid var(--grey-2);font-size:0.78rem;"/>
         <button class="btn btn--black" style="padding:10px 14px;font-size:0.7rem;">Subscribe</button>
       </form>
       <p id="newsletter-msg" style="font-size:0.68rem;margin-top:6px;display:none;"></p>
@@ -230,9 +230,6 @@
     <div id="qv-body" style="padding:24px;"></div>
   </div>
 </div>
-
-<!-- ── Live Sales Popup ─────────────────────── -->
-<div class="live-sale" id="live-sale"></div>
 
 <!-- ── Cookie Consent ───────────────────────── -->
 <div class="cookie-banner" id="cookie-banner" style="display:none;">
@@ -332,30 +329,6 @@ window.openQuickView = function(productId) {
       '</div>';
   });
 };
-
-// Live sales social-proof popup
-(function() {
-  fetch('/api/live-sales').then(function(r) { return r.json(); }).then(function(d) {
-    if (!d.recent || !d.recent.length) return;
-    var idx = 0;
-    var el = document.getElementById('live-sale');
-    function show() {
-      if (idx >= d.recent.length) { idx = 0; }
-      var s = d.recent[idx++];
-      el.innerHTML =
-        '<div style="display:flex;gap:10px;align-items:center;">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M20 7l-8 8-5-5"/></svg>' +
-          '<div><strong>' + s.name + '</strong> in ' + s.city + ' just ordered ' +
-          '<em style="font-weight:600;">' + s.item + '</em>' +
-          '<span style="color:#888;font-size:0.7rem;display:block;">' + s.minutes_ago + ' min ago</span></div>' +
-        '</div>';
-      el.classList.add('show');
-      setTimeout(function() { el.classList.remove('show'); }, 6000);
-    }
-    setTimeout(show, 8000);
-    setInterval(show, 22000);
-  }).catch(function() {});
-})();
 
 // PWA service worker
 if ('serviceWorker' in navigator) {
