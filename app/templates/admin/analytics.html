@@ -1,0 +1,75 @@
+{% extends 'admin/base.html' %}
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  <h1 style="font-size:1.5rem;font-weight:700;">Analytics</h1>
+  <span style="font-size:0.7rem;color:#888;">Last 30 days</span>
+</div>
+
+<div class="dashboard-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;">
+  <div class="stat-card"><span class="stat-card__label">Revenue (30d)</span><span class="stat-card__value">{{ total_revenue|currency }}</span></div>
+  <div class="stat-card"><span class="stat-card__label">Orders (30d)</span><span class="stat-card__value">{{ total_orders }}</span></div>
+  <div class="stat-card"><span class="stat-card__label">Avg Order</span><span class="stat-card__value">{{ avg_order|currency }}</span></div>
+</div>
+
+<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;color:#333;">Revenue — Last 30 days</h2>
+<canvas id="chartRevenue" height="80"></canvas>
+
+<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin:40px 0 16px;color:#333;">Top Products</h2>
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead><tr><th>Product</th><th style="text-align:right;">Units</th><th style="text-align:right;">Revenue</th></tr></thead>
+  <tbody>
+  {% for p in top_products %}
+  <tr>
+    <td>{{ p.name }}</td>
+    <td style="text-align:right;">{{ p.units }}</td>
+    <td style="text-align:right;">{{ p.revenue|currency }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="3" style="text-align:center;color:#aaa;padding:32px;">No sales yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin:40px 0 16px;color:#333;">Orders by Status</h2>
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+  {% for s in status_breakdown %}
+  <div style="border:1px solid var(--grey-2);padding:12px 18px;min-width:120px;">
+    <p style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:#888;margin-bottom:4px;">{{ s.status }}</p>
+    <p style="font-size:1.4rem;font-weight:700;">{{ s.count }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const daily = {{ daily|tojson }};
+const labels = daily.map(d => d.date.slice(5));
+const revenueData = daily.map(d => d.revenue);
+
+new Chart(document.getElementById('chartRevenue'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Revenue (GH₵)',
+      data: revenueData,
+      borderColor: '#000',
+      backgroundColor: 'rgba(0,0,0,0.06)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true } }
+  }
+});
+</script>
+{% endblock %}

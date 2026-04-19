@@ -1,0 +1,62 @@
+{% extends 'admin/base.html' %}
+{% block title %}Notifications Log{% endblock %}
+
+{% block content %}
+<h1 style="font-size:1.5rem;font-weight:700;margin-bottom:8px;">Notifications Log</h1>
+<p style="font-size:0.75rem;color:#888;margin-bottom:24px;">
+  Every SMS and email the system has queued. Status <strong>logged</strong> means no provider is wired yet —
+  set <code>SMS_PROVIDER</code> env var and implement the provider in <code>app/notifications.py</code>.
+</p>
+
+<div class="filter-bar" style="margin-bottom:16px;gap:8px;flex-wrap:wrap;">
+  {% for s in ['all','logged','sent','failed'] %}
+  <a href="?status={{ s }}&channel={{ current_channel }}"
+     class="filter-chip {% if current_status==s %}active{% endif %}">
+    {{ s }} ({{ counts[s] if s in counts else 0 }})
+  </a>
+  {% endfor %}
+  <span style="margin-left:12px;color:#ccc;">|</span>
+  {% for c in ['all','sms','email'] %}
+  <a href="?status={{ current_status }}&channel={{ c }}"
+     class="filter-chip {% if current_channel==c %}active{% endif %}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead><tr>
+    <th>When</th><th>Channel</th><th>Recipient</th>
+    <th>Subject / Preview</th><th>Status</th><th>Provider</th>
+  </tr></thead>
+  <tbody>
+  {% for n in pagination.items %}
+  <tr>
+    <td style="white-space:nowrap;">{{ n.created_at.strftime('%b %d, %H:%M') }}</td>
+    <td>{{ n.channel }}</td>
+    <td>{{ n.recipient }}</td>
+    <td>
+      {% if n.subject %}<strong>{{ n.subject }}</strong><br/>{% endif %}
+      <span style="color:#666;font-size:0.78rem;">{{ n.message[:120] }}{% if n.message|length > 120 %}…{% endif %}</span>
+    </td>
+    <td>
+      <span class="badge badge--{{ n.status }}" style="font-size:0.62rem;padding:3px 8px;background:{% if n.status=='sent' %}#d4edda{% elif n.status=='failed' %}#f8d7da{% else %}#e9ecef{% endif %};">
+        {{ n.status }}
+      </span>
+    </td>
+    <td>{{ n.provider or '—' }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" style="text-align:center;color:#aaa;padding:32px;">No notifications yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="pagination" style="margin-top:24px;">
+  {% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}&status={{ current_status }}&channel={{ current_channel }}">←</a>{% endif %}
+  <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
+  {% if pagination.has_next %}<a href="?page={{ pagination.next_num }}&status={{ current_status }}&channel={{ current_channel }}">→</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

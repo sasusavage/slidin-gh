@@ -110,6 +110,26 @@
       </button>
     </div>
 
+    {% if review_stats.count %}
+    <p style="font-size:0.75rem;color:#333;margin:4px 0 0;">
+      <span style="color:#f5a623;">{% for _ in range(review_stats.avg|int) %}★{% endfor %}{% for _ in range(5 - review_stats.avg|int) %}☆{% endfor %}</span>
+      <span style="color:#888;margin-left:6px;">{{ review_stats.avg }} · {{ review_stats.count }} review{{ 's' if review_stats.count != 1 }}</span>
+    </p>
+    {% endif %}
+
+    {% if not product.in_stock %}
+    <div style="margin-top:16px;padding:14px;border:1px solid var(--grey-2);background:#fafafa;">
+      <p style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;color:#c00;font-weight:600;">Out of Stock</p>
+      <p style="font-size:0.78rem;color:#555;margin-bottom:10px;">Get notified when this is back:</p>
+      <form id="stock-notify-form" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <input type="tel" id="stock-notify-phone" placeholder="Your phone"
+               style="flex:1;min-width:160px;padding:9px;border:1px solid var(--grey-2);font-size:0.78rem;"/>
+        <button type="submit" class="btn btn--black" style="padding:9px 14px;font-size:0.7rem;">Notify Me</button>
+      </form>
+      <p id="stock-notify-msg" style="font-size:0.7rem;margin-top:8px;color:green;display:none;"></p>
+    </div>
+    {% endif %}
+
     {% if product.description %}
     <div class="pdp__desc">{{ product.description }}</div>
     {% endif %}
@@ -178,6 +198,48 @@
   </div>
 </div>
 
+<!-- Reviews section -->
+<section class="section" style="border-top:1px solid var(--black);">
+  <span class="section-label">Customer Reviews</span>
+
+  <div class="reviews-wrap">
+    <div class="reviews-list">
+      {% if reviews %}
+        {% for r in reviews %}
+        <div class="review-item">
+          <div class="review-item__head">
+            <strong>{{ r.reviewer_name }}</strong>
+            <span class="review-item__stars" style="color:#f5a623;">{{ r.stars }}</span>
+            <span class="review-item__date">{{ r.created_at.strftime('%b %d, %Y') }}</span>
+          </div>
+          {% if r.title %}<p class="review-item__title">{{ r.title }}</p>{% endif %}
+          {% if r.content %}<p class="review-item__content">{{ r.content }}</p>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:#888;font-size:0.8rem;padding:16px 0;">No reviews yet. Be the first!</p>
+      {% endif %}
+    </div>
+
+    <form class="review-form" id="review-form" data-product-id="{{ product.id }}">
+      <h3 style="font-size:0.9rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px;">Write a Review</h3>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#666;">Rating *</label>
+        <div class="star-rating" id="star-rating">
+          {% for i in range(1,6) %}<span data-value="{{ i }}" class="star">☆</span>{% endfor %}
+        </div>
+        <input type="hidden" name="rating" id="rating-input" value=""/>
+      </div>
+      <div class="field"><label>Your Name *</label><input type="text" name="name" required/></div>
+      <div class="field"><label>Email (not shown)</label><input type="email" name="email"/></div>
+      <div class="field"><label>Title</label><input type="text" name="title" maxlength="200"/></div>
+      <div class="field"><label>Review</label><textarea name="content" rows="4"></textarea></div>
+      <button type="submit" class="btn btn--black">Submit Review</button>
+      <p id="review-msg" style="font-size:0.75rem;margin-top:10px;display:none;"></p>
+    </form>
+  </div>
+</section>
+
 <!-- Recently viewed strip -->
 <section class="section" id="recently-viewed-section" style="display:none;border-top:1px solid var(--black);">
   <span class="section-label">Recently Viewed</span>
@@ -205,6 +267,60 @@
 {% endif %}
 
 <script>
+// Stock notification form
+(function() {
+  var f = document.getElementById('stock-notify-form');
+  if (!f) return;
+  f.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var phone = document.getElementById('stock-notify-phone').value.trim();
+    if (!phone) return;
+    fetch('/api/notify-stock', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({product_id: '{{ product.id }}', phone: phone}),
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      var m = document.getElementById('stock-notify-msg');
+      m.textContent = d.message || (d.success ? 'Added.' : 'Error.');
+      m.style.color = d.success ? 'green' : '#c00';
+      m.style.display = 'block';
+      if (d.success) f.reset();
+    });
+  });
+})();
+
+// Review form
+(function() {
+  var form = document.getElementById('review-form');
+  if (!form) return;
+  var stars = document.querySelectorAll('#star-rating .star');
+  var input = document.getElementById('rating-input');
+  stars.forEach(function(s) {
+    s.addEventListener('click', function() {
+      var v = parseInt(this.dataset.value);
+      input.value = v;
+      stars.forEach(function(s2) {
+        s2.textContent = parseInt(s2.dataset.value) <= v ? '★' : '☆';
+        s2.style.color = parseInt(s2.dataset.value) <= v ? '#f5a623' : '#ccc';
+      });
+    });
+  });
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!input.value) { alert('Please pick a rating.'); return; }
+    var fd = new FormData(form);
+    fetch('/product/' + form.dataset.productId + '/review', {
+      method: 'POST', body: fd
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      var m = document.getElementById('review-msg');
+      m.textContent = d.message || d.error || 'Error.';
+      m.style.color = d.success ? 'green' : '#c00';
+      m.style.display = 'block';
+      if (d.success) form.reset();
+    });
+  });
+})();
+
 document.querySelectorAll('.pdp__thumb').forEach(function(thumb) {
   thumb.addEventListener('click', function() {
     document.querySelectorAll('.pdp__thumb').forEach(function(t) { t.classList.remove('active'); });

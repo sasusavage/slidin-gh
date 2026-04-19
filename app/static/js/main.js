@@ -220,6 +220,33 @@ function formatPrice(n) {
   return 'GH₵' + parseFloat(n).toLocaleString('en-GH', { minimumFractionDigits: 2 });
 }
 
+// ── Cart countdown timer (urgency) ────────
+(function() {
+  var el = document.getElementById('cart-timer');
+  if (!el) return;
+  var KEY = 'slidein_cart_timer_start';
+  var DURATION = 10 * 60 * 1000; // 10 min
+  var start;
+  try { start = parseInt(localStorage.getItem(KEY) || '0'); } catch(e){}
+  if (!start || Date.now() - start > DURATION) {
+    start = Date.now();
+    try { localStorage.setItem(KEY, String(start)); } catch(e){}
+  }
+  function tick() {
+    var remain = Math.max(0, DURATION - (Date.now() - start));
+    var m = Math.floor(remain / 60000);
+    var s = Math.floor((remain % 60000) / 1000);
+    el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if (remain <= 0) {
+      try { localStorage.removeItem(KEY); } catch(e){}
+      start = Date.now();
+      try { localStorage.setItem(KEY, String(start)); } catch(e){}
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
 // ── Wishlist (localStorage, no account needed) ──
 const WISHLIST_KEY = 'slidein_wishlist';
 

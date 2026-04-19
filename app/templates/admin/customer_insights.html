@@ -1,0 +1,35 @@
+{% extends 'admin/base.html' %}
+{% block title %}Customer Insights{% endblock %}
+
+{% block content %}
+<h1 style="font-size:1.5rem;font-weight:700;margin-bottom:24px;">Customer Insights</h1>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;">
+  <div class="stat-card"><span class="stat-card__label">Total Customers</span><span class="stat-card__value">{{ total }}</span></div>
+  <div class="stat-card"><span class="stat-card__label">Repeat Buyers</span><span class="stat-card__value">{{ repeat }}</span></div>
+  <div class="stat-card"><span class="stat-card__label">Repeat Rate</span><span class="stat-card__value">{{ '%.1f'|format(repeat_rate) }}%</span></div>
+  <div class="stat-card"><span class="stat-card__label">Avg LTV</span><span class="stat-card__value">{{ ltv|currency }}</span></div>
+  <div class="stat-card"><span class="stat-card__label">New (30d)</span><span class="stat-card__value">{{ new_30 }}</span></div>
+  <div class="stat-card"><span class="stat-card__label">Active (30d)</span><span class="stat-card__value">{{ active_30 }}</span></div>
+</div>
+
+<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;color:#333;">Top Customers by Lifetime Value</h2>
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead><tr><th>Name</th><th>Phone</th><th style="text-align:right;">Orders</th><th style="text-align:right;">Total Spent</th><th></th></tr></thead>
+  <tbody>
+  {% for c in top_customers %}
+  <tr>
+    <td>{{ c.full_name }}</td>
+    <td>{{ c.phone }}</td>
+    <td style="text-align:right;">{{ c.order_count }}</td>
+    <td style="text-align:right;">{{ c.total_spent|currency }}</td>
+    <td><a href="{{ url_for('admin.customer_detail', customer_id=c.id) }}" style="font-size:0.7rem;">View</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" style="text-align:center;color:#aaa;padding:32px;">No customers yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

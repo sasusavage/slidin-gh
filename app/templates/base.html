@@ -13,6 +13,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"/>
+  <link rel="manifest" href="{{ url_for('store.webmanifest') }}"/>
+  <meta name="theme-color" content="#000000"/>
+  <link rel="apple-touch-icon" href="/static/img/icon-192.png"/>
   {% if site.seo_google_analytics %}
   <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.seo_google_analytics }}"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ site.seo_google_analytics }}');</script>
@@ -108,6 +111,11 @@
   {% for _i in cart_items %}{% set _cart_sub.v = _cart_sub.v + _i.price * _i.quantity %}{% endfor %}
   {% set ship_target = 500 %}
   {% if cart_items %}
+  <div class="flash-banner">
+    <span>Reserved for</span>
+    <span class="flash-banner__timer" id="cart-timer">10:00</span>
+    <span>— complete checkout to secure stock</span>
+  </div>
   <div class="free-ship-bar">
     {% if _cart_sub.v >= ship_target %}
     <p class="free-ship-bar__msg free-ship-bar__msg--done">✓ Free delivery unlocked</p>
@@ -174,19 +182,187 @@
 
 <!-- ── Footer ─────────────────────────────── -->
 <footer class="footer">
-  <span class="footer__brand">Slidein GH</span>
-  <div class="footer__links">
-    <a href="{{ url_for('orders.track_order') }}">Track Order</a>
-    <a href="#">Contact</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
+  <div class="footer__inner">
+    <div class="footer__col">
+      <span class="footer__brand">Slidein GH</span>
+      <p style="font-size:0.75rem;color:#888;margin-top:8px;">Premium sneakers in Ghana.</p>
+    </div>
+    <div class="footer__col">
+      <p class="footer__title">Shop</p>
+      <a href="{{ url_for('store.shop') }}">All Products</a>
+      <a href="{{ url_for('store.shop', gender='men') }}">Men</a>
+      <a href="{{ url_for('store.shop', gender='women') }}">Women</a>
+      <a href="{{ url_for('store.wishlist') }}">Wishlist</a>
+    </div>
+    <div class="footer__col">
+      <p class="footer__title">Customer</p>
+      <a href="{{ url_for('orders.track_order') }}">Track Order</a>
+      <a href="/p/contact">Contact</a>
+      <a href="/p/shipping">Shipping</a>
+      <a href="/p/returns">Returns</a>
+    </div>
+    <div class="footer__col">
+      <p class="footer__title">Company</p>
+      <a href="/p/about">About</a>
+      <a href="/p/privacy">Privacy</a>
+      <a href="/p/terms">Terms</a>
+      <a href="/p/faq">FAQ</a>
+    </div>
+    <div class="footer__col footer__newsletter">
+      <p class="footer__title">Get New Drops First</p>
+      <form id="newsletter-form" style="display:flex;gap:6px;margin-top:6px;">
+        <input type="email" id="newsletter-email" placeholder="Your email" required
+               style="flex:1;padding:10px;border:1px solid var(--grey-2);font-size:0.78rem;"/>
+        <button class="btn btn--black" style="padding:10px 14px;font-size:0.7rem;">Subscribe</button>
+      </form>
+      <p id="newsletter-msg" style="font-size:0.68rem;margin-top:6px;display:none;"></p>
+    </div>
+  </div>
+  <div class="footer__bottom">
+    <span>© 2026 Slidein GH. All rights reserved.</span>
   </div>
 </footer>
+
+<!-- ── Quick View Modal ────────────────────── -->
+<div class="modal" id="quick-view-modal">
+  <div class="modal__backdrop" onclick="document.getElementById('quick-view-modal').classList.remove('open')"></div>
+  <div class="modal__panel" style="max-width:760px;padding:0;">
+    <div id="qv-body" style="padding:24px;"></div>
+  </div>
+</div>
+
+<!-- ── Live Sales Popup ─────────────────────── -->
+<div class="live-sale" id="live-sale"></div>
+
+<!-- ── Cookie Consent ───────────────────────── -->
+<div class="cookie-banner" id="cookie-banner" style="display:none;">
+  <span style="font-size:0.78rem;">We use cookies for cart and analytics. By using this site you accept our cookies.</span>
+  <button onclick="acceptCookies()" class="btn btn--black" style="padding:8px 16px;font-size:0.7rem;">Got it</button>
+</div>
+
+<!-- ── Mobile bottom nav ────────────────────── -->
+<nav class="bottom-nav">
+  <a href="{{ url_for('store.home') }}" class="{{ 'active' if request.endpoint=='store.home' }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+    <span>Home</span>
+  </a>
+  <a href="{{ url_for('store.shop') }}" class="{{ 'active' if request.endpoint=='store.shop' }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span>Shop</span>
+  </a>
+  <a href="{{ url_for('store.wishlist') }}" class="{{ 'active' if request.endpoint=='store.wishlist' }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+    <span>Saved</span>
+  </a>
+  <a href="#" data-cart-open>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+    <span>Bag {% if cart_count %}({{ cart_count }}){% endif %}</span>
+  </a>
+  <a href="{{ url_for('orders.track_order') }}" class="{{ 'active' if request.endpoint=='orders.track_order' }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Track</span>
+  </a>
+</nav>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+// Newsletter signup
+(function() {
+  var f = document.getElementById('newsletter-form');
+  if (!f) return;
+  f.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var email = document.getElementById('newsletter-email').value.trim();
+    if (!email) return;
+    fetch('/api/newsletter-signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email: email}),
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      var m = document.getElementById('newsletter-msg');
+      m.textContent = d.message || d.error || '';
+      m.style.color = d.success ? 'green' : '#c00';
+      m.style.display = 'block';
+      if (d.success) f.reset();
+    });
+  });
+})();
+
+// Cookie consent
+function acceptCookies() {
+  try { localStorage.setItem('slidein_cookie_ok', '1'); } catch (e) {}
+  document.getElementById('cookie-banner').style.display = 'none';
+}
+(function() {
+  try {
+    if (!localStorage.getItem('slidein_cookie_ok')) {
+      document.getElementById('cookie-banner').style.display = 'flex';
+    }
+  } catch (e) {}
+})();
+
+// Quick View
+window.openQuickView = function(productId) {
+  var modal = document.getElementById('quick-view-modal');
+  var body = document.getElementById('qv-body');
+  body.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Loading…</p>';
+  modal.classList.add('open');
+  fetch('/api/quick-view/' + productId).then(function(r) { return r.json(); }).then(function(p) {
+    var compareHtml = p.compare_at_price
+      ? '<span style="text-decoration:line-through;color:#999;margin-left:8px;">GH₵' + p.compare_at_price.toFixed(2) + '</span>' : '';
+    var sizeBtns = (p.sizes || []).map(function(s) {
+      return '<button class="size-btn" onclick="document.querySelectorAll(\'#qv-body .size-btn\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\');window._qvSize=\'' + s + '\';">' + s + '</button>';
+    }).join('');
+    body.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;" class="qv-grid">' +
+        '<img src="' + p.image + '" alt="' + p.name + '" style="width:100%;aspect-ratio:1;object-fit:cover;"/>' +
+        '<div>' +
+          '<button onclick="document.getElementById(\'quick-view-modal\').classList.remove(\'open\');" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>' +
+          (p.brand ? '<p style="font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:#888;">' + p.brand + '</p>' : '') +
+          '<h2 style="font-size:1.2rem;font-weight:700;margin:4px 0 12px;">' + p.name + '</h2>' +
+          '<p style="font-size:1.1rem;margin-bottom:16px;">GH₵' + p.price.toFixed(2) + compareHtml + '</p>' +
+          (p.description ? '<p style="font-size:0.8rem;color:#555;margin-bottom:16px;">' + p.description.slice(0, 200) + (p.description.length > 200 ? '…' : '') + '</p>' : '') +
+          (sizeBtns ? '<div style="margin-bottom:16px;"><p style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:8px;">Size</p><div class="size-grid">' + sizeBtns + '</div></div>' : '') +
+          '<a href="' + p.url + '" class="btn btn--black btn--full">View Details</a>' +
+        '</div>' +
+      '</div>';
+  });
+};
+
+// Live sales social-proof popup
+(function() {
+  fetch('/api/live-sales').then(function(r) { return r.json(); }).then(function(d) {
+    if (!d.recent || !d.recent.length) return;
+    var idx = 0;
+    var el = document.getElementById('live-sale');
+    function show() {
+      if (idx >= d.recent.length) { idx = 0; }
+      var s = d.recent[idx++];
+      el.innerHTML =
+        '<div style="display:flex;gap:10px;align-items:center;">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M20 7l-8 8-5-5"/></svg>' +
+          '<div><strong>' + s.name + '</strong> in ' + s.city + ' just ordered ' +
+          '<em style="font-weight:600;">' + s.item + '</em>' +
+          '<span style="color:#888;font-size:0.7rem;display:block;">' + s.minutes_ago + ' min ago</span></div>' +
+        '</div>';
+      el.classList.add('show');
+      setTimeout(function() { el.classList.remove('show'); }, 6000);
+    }
+    setTimeout(show, 8000);
+    setInterval(show, 22000);
+  }).catch(function() {});
+})();
+
+// PWA service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').catch(function() {});
+}
+</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>

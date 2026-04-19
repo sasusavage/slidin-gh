@@ -438,6 +438,31 @@ class NotificationLog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class StockNotification(db.Model):
+    """Back-in-stock alert signup for guests (phone/email, no account)."""
+    __tablename__ = 'stock_notifications'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    product_id = db.Column(db.String(36), db.ForeignKey('products.id'), nullable=False)
+    variant_id = db.Column(db.String(36), db.ForeignKey('product_variants.id'))
+    phone = db.Column(db.String(30))
+    email = db.Column(db.String(200))
+    notified_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product')
+    variant = db.relationship('ProductVariant')
+
+
+class NewsletterSignup(db.Model):
+    """Footer newsletter signups (email-based)."""
+    __tablename__ = 'newsletter_signups'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    email = db.Column(db.String(200), unique=True, nullable=False)
+    source = db.Column(db.String(50), default='footer')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class CouponCode(db.Model):
     """Discount coupons applied at checkout."""
     __tablename__ = 'coupon_codes'

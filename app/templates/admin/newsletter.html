@@ -1,0 +1,32 @@
+{% extends 'admin/base.html' %}
+{% block title %}Newsletter Subscribers{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  <h1 style="font-size:1.5rem;font-weight:700;">Newsletter Subscribers</h1>
+  <span style="font-size:0.75rem;color:#888;">{{ signups|length }} total</span>
+</div>
+
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead><tr><th>Email</th><th>Source</th><th>Signed up</th></tr></thead>
+  <tbody>
+  {% for s in signups %}
+  <tr>
+    <td>{{ s.email }}</td>
+    <td>{{ s.source }}</td>
+    <td>{{ s.created_at.strftime('%b %d, %Y') }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="3" style="text-align:center;color:#aaa;padding:32px;">No signups yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if signups %}
+<p style="margin-top:16px;font-size:0.72rem;color:#666;">
+  Tip: export via the database or copy/paste into your email tool.
+</p>
+{% endif %}
+{% endblock %}

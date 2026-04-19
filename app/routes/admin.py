@@ -4,8 +4,9 @@ from flask import (Blueprint, render_template, request, session,
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (Product, ProductImage, ProductVariant, Category,
-                         Order, Customer, AdminUser, SiteSettings,
-                         Banner, Page, CouponCode, ProductReview)
+                         Order, OrderItem, Customer, AdminUser, SiteSettings,
+                         Banner, Page, CouponCode, ProductReview,
+                         NotificationLog, NewsletterSignup, StockNotification)
 from app import db
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -717,3 +718,140 @@ def review_delete(review_id):
     db.session.delete(review)
     db.session.commit()
     return redirect(url_for('admin.reviews'))
+
+
+# ── Analytics ─────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/analytics')
+@admin_required
+def analytics():
+    today = datetime.utcnow().date()
+    start = today - timedelta(days=29)
+
+    # Daily revenue & orders (last 30 days)
+    daily = {}
+    for n in range(30):
+        d = start + timedelta(days=n)
+        daily[d.isoformat()] = {'date': d.isoformat(), 'revenue': 0, 'orders': 0}
+
+    rows = db.session.query(
+        func.date(Order.created_at).label('d'),
+        func.count(Order.id).label('n'),
+        func.sum(Order.total).label('rev'),
+    ).filter(
+        func.date(Order.created_at) >= start,
+        Order.status != 'cancelled'
+    ).group_by('d').all()
+
+    for d, n, rev in rows:
+        key = d.isoformat() if hasattr(d, 'isoformat') else str(d)
+        if key in daily:
+            daily[key]['orders'] = int(n or 0)
+            daily[key]['revenue'] = float(rev or 0)
+    daily_list = sorted(daily.values(), key=lambda r: r['date'])
+
+    # Top products (by units sold)
+    top_rows = db.session.query(
+        OrderItem.product_name,
+        func.sum(OrderItem.quantity).label('units'),
+        func.sum(OrderItem.price * OrderItem.quantity).label('rev'),
+    ).join(Order, OrderItem.order_id == Order.id).filter(
+        Order.status != 'cancelled'
+    ).group_by(OrderItem.product_name).order_by(
+        func.sum(OrderItem.quantity).desc()
+    ).limit(10).all()
+    top_products = [{'name': r[0], 'units': int(r[1] or 0),
+                     'revenue': float(r[2] or 0)} for r in top_rows]
+
+    # Status breakdown
+    status_rows = db.session.query(
+        Order.status, func.count(Order.id)
+    ).group_by(Order.status).all()
+    status_breakdown = [{'status': s, 'count': int(n)} for s, n in status_rows]
+
+    # Totals
+    total_revenue = sum(r['revenue'] for r in daily_list)
+    total_orders = sum(r['orders'] for r in daily_list)
+    avg_order = (total_revenue / total_orders) if total_orders else 0
+
+    return render_template('admin/analytics.html',
+                           daily=daily_list,
+                           top_products=top_products,
+                           status_breakdown=status_breakdown,
+                           total_revenue=total_revenue,
+                           total_orders=total_orders,
+                           avg_order=avg_order)
+
+
+# ── Customer Insights ─────────────────────────────────────────────────────────
+
+@admin_bp.route('/customer-insights')
+@admin_required
+def customer_insights():
+    customers = Customer.query.all()
+    total = len(customers)
+    repeat = sum(1 for c in customers if c.order_count > 1)
+    repeat_rate = (repeat / total * 100) if total else 0
+    ltv = (sum(float(c.total_spent or 0) for c in customers) / total) if total else 0
+
+    top = sorted(customers, key=lambda c: float(c.total_spent or 0), reverse=True)[:15]
+
+    # New vs returning (last 30 days)
+    today = datetime.utcnow().date()
+    start = today - timedelta(days=29)
+    new_30 = Customer.query.filter(Customer.created_at >= start).count()
+    active_30 = db.session.query(Order.customer_id).filter(
+        Order.created_at >= start).distinct().count()
+
+    return render_template('admin/customer_insights.html',
+                           total=total, repeat=repeat,
+                           repeat_rate=repeat_rate, ltv=ltv,
+                           top_customers=top,
+                           new_30=new_30, active_30=active_30)
+
+
+# ── Notifications Log ─────────────────────────────────────────────────────────
+
+@admin_bp.route('/notifications')
+@admin_required
+def notifications():
+    status_filter = request.args.get('status', 'all')
+    channel_filter = request.args.get('channel', 'all')
+    page = request.args.get('page', 1, type=int)
+    q = NotificationLog.query.order_by(NotificationLog.created_at.desc())
+    if status_filter != 'all':
+        q = q.filter_by(status=status_filter)
+    if channel_filter != 'all':
+        q = q.filter_by(channel=channel_filter)
+    pagination = q.paginate(page=page, per_page=50, error_out=False)
+    counts = {
+        'all': NotificationLog.query.count(),
+        'logged': NotificationLog.query.filter_by(status='logged').count(),
+        'sent': NotificationLog.query.filter_by(status='sent').count(),
+        'failed': NotificationLog.query.filter_by(status='failed').count(),
+    }
+    return render_template('admin/notifications.html',
+                           pagination=pagination,
+                           current_status=status_filter,
+                           current_channel=channel_filter,
+                           counts=counts)
+
+
+# ── Newsletter subscribers ────────────────────────────────────────────────────
+
+@admin_bp.route('/newsletter')
+@admin_required
+def newsletter():
+    items = NewsletterSignup.query.order_by(
+        NewsletterSignup.created_at.desc()).all()
+    return render_template('admin/newsletter.html', signups=items)
+
+
+# ── Stock alert signups ───────────────────────────────────────────────────────
+
+@admin_bp.route('/stock-alerts')
+@admin_required
+def stock_alerts():
+    items = StockNotification.query.filter_by(notified_at=None).order_by(
+        StockNotification.created_at.desc()).all()
+    return render_template('admin/stock_alerts.html', signups=items)

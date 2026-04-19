@@ -1,0 +1,35 @@
+{% extends 'admin/base.html' %}
+{% block title %}Stock Alert Signups{% endblock %}
+
+{% block content %}
+<h1 style="font-size:1.5rem;font-weight:700;margin-bottom:8px;">Back-in-Stock Alerts</h1>
+<p style="font-size:0.75rem;color:#888;margin-bottom:24px;">
+  Customers waiting to be notified. Once you restock, flip the variant quantity in Inventory and these will
+  show which numbers/emails to text/email.
+</p>
+
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead><tr>
+    <th>Product</th><th>Variant</th><th>Phone</th><th>Email</th><th>Requested</th>
+  </tr></thead>
+  <tbody>
+  {% for s in signups %}
+  <tr>
+    <td>{{ s.product.name if s.product else '—' }}</td>
+    <td>
+      {% if s.variant %}
+        {{ s.variant.size or '' }} {{ s.variant.color or '' }}
+      {% else %}Any{% endif %}
+    </td>
+    <td>{{ s.phone or '—' }}</td>
+    <td>{{ s.email or '—' }}</td>
+    <td>{{ s.created_at.strftime('%b %d, %Y') }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" style="text-align:center;color:#aaa;padding:32px;">No pending alerts.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

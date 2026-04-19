@@ -39,10 +39,36 @@
     <p style="font-size:0.8rem;color:#aaa;padding:16px 0;">Your cart is empty.</p>
     {% endif %}
 
+    <!-- Coupon input -->
+    <div class="coupon-row" style="border-top:1px solid var(--grey-2);padding:14px 0;">
+      {% if coupon_code %}
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <p style="font-size:0.72rem;color:#0a7a2f;font-weight:600;">✓ {{ coupon_code }} applied — {{ coupon_label }}</p>
+          <p style="font-size:0.65rem;color:#888;">You saved {{ coupon_discount|currency }}</p>
+        </div>
+        <button type="button" id="remove-coupon-btn"
+                style="background:none;border:none;color:#c00;font-size:0.7rem;cursor:pointer;text-decoration:underline;">Remove</button>
+      </div>
+      {% else %}
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="coupon-input" placeholder="Coupon code"
+               style="flex:1;padding:9px;border:1px solid var(--grey-2);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;"/>
+        <button type="button" id="apply-coupon-btn" class="btn btn--outline" style="padding:9px 14px;font-size:0.7rem;">Apply</button>
+      </div>
+      <p id="coupon-msg" style="font-size:0.65rem;margin-top:6px;display:none;"></p>
+      {% endif %}
+    </div>
+
     <div class="summary-totals">
       <div class="summary-row">
         <span>Subtotal</span><span>{{ subtotal|currency }}</span>
       </div>
+      {% if coupon_discount %}
+      <div class="summary-row" style="color:#0a7a2f;">
+        <span>Discount ({{ coupon_code }})</span><span>−{{ coupon_discount|currency }}</span>
+      </div>
+      {% endif %}
       <div class="summary-row">
         <span>Delivery</span>
         <span>{% if delivery_fee == 0 %}
@@ -53,6 +79,20 @@
         <span>Total</span><span>{{ total|currency }}</span>
       </div>
     </div>
+
+    {% if order_bump %}
+    <label style="display:flex;gap:12px;align-items:center;cursor:pointer;padding:12px;border:2px dashed #f5a623;margin-top:16px;background:#fffbe6;">
+      <input type="checkbox" id="order-bump-checkbox" value="{{ order_bump.id }}" style="width:18px;height:18px;"/>
+      <img src="{{ order_bump.primary_image }}" alt="{{ order_bump.name }}"
+           style="width:48px;height:48px;object-fit:cover;"/>
+      <div style="flex:1;">
+        <p style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:#c47900;margin-bottom:4px;font-weight:600;">
+          Add-on offer
+        </p>
+        <p style="font-size:0.8rem;font-weight:600;">Add {{ order_bump.name }} — {{ order_bump.price|currency }}</p>
+      </div>
+    </label>
+    {% endif %}
 
     {% if delivery_fee == 0 %}
     <p style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:green;margin-top:12px;">
@@ -76,6 +116,13 @@
     {% endif %}
 
     <form method="post" action="{{ url_for('orders.place_order') }}">
+      <input type="hidden" name="order_bump_id" id="order-bump-id" value=""/>
+
+      <!-- Returning customer order history (populated by JS after phone lookup) -->
+      <div id="order-history-box" style="display:none;margin-bottom:20px;padding:14px;background:#f7f7f7;border-left:3px solid #000;">
+        <p style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:8px;">Your recent orders</p>
+        <div id="order-history-list"></div>
+      </div>
 
       <p class="checkout-section-title">Delivery Information</p>
 
@@ -150,6 +197,25 @@
   hint.style.cssText = 'font-size:0.65rem;color:#888;margin-top:4px;letter-spacing:0.05em;';
   phoneInput.parentNode.appendChild(hint);
   var lookupTimer;
+
+  function loadHistory(phone) {
+    fetch('/checkout/order-history?phone=' + encodeURIComponent(phone))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var box = document.getElementById('order-history-box');
+        var list = document.getElementById('order-history-list');
+        if (!box || !d.orders || !d.orders.length) return;
+        list.innerHTML = d.orders.map(function(o) {
+          return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px dotted #ddd;font-size:0.72rem;">' +
+                  '<span><strong>#' + o.order_number + '</strong> · ' + o.created_at + ' · ' + o.item_count + ' item' + (o.item_count !== 1 ? 's' : '') + '</span>' +
+                  '<span>' + o.status + ' · GH\u20B5' + o.total.toFixed(2) + '</span>' +
+                '</div>';
+        }).join('');
+        box.style.display = 'block';
+      })
+      .catch(function() {});
+  }
+
   phoneInput.addEventListener('input', function() {
     clearTimeout(lookupTimer);
     var val = this.value.trim();
@@ -170,9 +236,50 @@
           setIfEmpty('region', d.region);
           hint.textContent = '\u2713 Welcome back, ' + d.full_name + ' \u2014 details auto-filled.';
           hint.style.color = 'green';
+          loadHistory(val);
         })
         .catch(function() {});
     }, 500);
+  });
+})();
+
+// Coupon apply / remove
+(function() {
+  var applyBtn = document.getElementById('apply-coupon-btn');
+  var removeBtn = document.getElementById('remove-coupon-btn');
+  var msg = document.getElementById('coupon-msg');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', function() {
+      var code = document.getElementById('coupon-input').value.trim();
+      if (!code) return;
+      fetch('/checkout/apply-coupon', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code: code}),
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        msg.textContent = d.message || (d.valid ? 'Applied.' : 'Invalid code.');
+        msg.style.color = d.valid ? 'green' : '#c00';
+        msg.style.display = 'block';
+        if (d.valid) setTimeout(function() { window.location.reload(); }, 700);
+      });
+    });
+  }
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      fetch('/checkout/remove-coupon', {method: 'POST'}).then(function() {
+        window.location.reload();
+      });
+    });
+  }
+})();
+
+// Order bump checkbox → hidden field
+(function() {
+  var cb = document.getElementById('order-bump-checkbox');
+  var hidden = document.getElementById('order-bump-id');
+  if (!cb || !hidden) return;
+  cb.addEventListener('change', function() {
+    hidden.value = cb.checked ? cb.value : '';
   });
 })();
 </script>
