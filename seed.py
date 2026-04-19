@@ -1,5 +1,5 @@
 """
-Seed script for Slidin GH — run once to populate the DB with:
+Seed script for Slidein GH — run once to populate the DB with:
   - Site settings (announcement bar, hero, trust features, footer)
   - Categories (already exist, but will add if missing)
   - Products with variants (no images — upload via admin)
@@ -228,7 +228,7 @@ PRODUCTS = [
 #  SITE SETTINGS
 # ─────────────────────────────────────────────
 SETTINGS = {
-    'site_name': 'Slidin GH',
+    'site_name': 'Slidein GH',
     'site_tagline': 'Premium Sneakers & Streetwear in Ghana',
     'contact_phone': '+233 55 000 0000',
     'contact_email': 'hello@slidingh.com',
@@ -282,12 +282,12 @@ SETTINGS = {
     'announcement_bar_active': 'true',
 
     # SEO
-    'seo_title': 'Slidin GH — Authentic Sneakers in Ghana',
+    'seo_title': 'Slidein GH — Authentic Sneakers in Ghana',
     'seo_description': 'Shop authentic Nike, Adidas, Jordan, Puma and more. Fast delivery across Ghana. 100% genuine products.',
     'seo_keywords': 'sneakers ghana, nike accra, adidas ghana, jordan shoes ghana, authentic sneakers',
 
     # Footer
-    'footer_copyright_text': '© 2025 Slidin GH. All rights reserved.',
+    'footer_copyright_text': '© 2025 Slidein GH. All rights reserved.',
     'footer_show_newsletter': 'false',
     'footer_col1_title': 'Shop',
     'footer_col1_links_json': '[{"label":"All Sneakers","href":"/shop"},{"label":"New Arrivals","href":"/shop?sort=newest"},{"label":"Sale","href":"/shop?sort=price_asc"}]',
@@ -305,8 +305,8 @@ SETTINGS = {
     # About page
     'about_hero_title': 'Our Story',
     'about_hero_subtitle': 'Born in Ghana. Built for Sneakerheads.',
-    'about_story_title': 'How Slidin Started',
-    'about_story_content': 'Slidin GH was founded with one mission: bring authentic, quality sneakers and streetwear to Ghana at fair prices. No fakes, no compromises.',
+    'about_story_title': 'How Slidein Started',
+    'about_story_content': 'Slidein GH was founded with one mission: bring authentic, quality sneakers and streetwear to Ghana at fair prices. No fakes, no compromises.',
     'about_cta_title': 'Ready to step up?',
     'about_cta_subtitle': 'Browse our latest drops and find your next favourite pair.',
 }
@@ -337,7 +337,7 @@ BANNERS = [
 # ─────────────────────────────────────────────
 def seed():
     with app.app_context():
-        print("🌱 Seeding Slidin GH database…")
+        print("🌱 Seeding Slidein GH database…")
 
         # ── Categories ───────────────────────
         cat_map = {}

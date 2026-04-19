@@ -1,4 +1,4 @@
-/* ── Slidin GH — main.js ─────────────────── */
+/* ── Slidein GH — main.js ─────────────────── */
 
 // ── Menu overlay ──────────────────────────
 const menuOverlay = document.getElementById('menu-overlay');

@@ -1,4 +1,4 @@
-# Slidin GH — Store
+# Slidein GH — Store
 
 Flask + PostgreSQL e-commerce. Balenciaga-inspired editorial design.
 No customer accounts — just order, confirm, done.

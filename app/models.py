@@ -247,7 +247,7 @@ class SiteSettings(db.Model):
 
     DEFAULTS = {
         # General
-        'site_name': 'Slidin GH',
+        'site_name': 'Slidein GH',
         'site_tagline': 'Premium Sneakers in Ghana',
         'site_logo': '',
         'site_favicon': '',
@@ -270,7 +270,7 @@ class SiteSettings(db.Model):
         'hero_style': 'balenciaga',
         'hero_media_type': 'image',
         'hero_media_url': '',
-        'hero_label': 'SS 2025 — Slidin GH',
+        'hero_label': 'SS 2025 — Slidein GH',
         'hero_title': 'Campaign',
         'hero_subheadline': '',
         'hero_cta_primary_text': 'Shop Sneakers',
@@ -312,7 +312,7 @@ class SiteSettings(db.Model):
         'footer_col2_links_json': '[{"label":"Track Order","href":"/track-order"},{"label":"Returns","href":"/p/returns"},{"label":"FAQ","href":"/p/faq"}]',
         'footer_col3_title': 'Company',
         'footer_col3_links_json': '[{"label":"About Us","href":"/p/about"},{"label":"Contact","href":"/p/contact"},{"label":"Privacy","href":"/p/privacy"}]',
-        'footer_copyright_text': '© 2025 Slidin GH. All rights reserved.',
+        'footer_copyright_text': '© 2025 Slidein GH. All rights reserved.',
         'footer_show_newsletter': 'false',
         'footer_newsletter_title': 'Stay in the loop',
         'footer_newsletter_subtitle': 'New drops, exclusive deals — in your inbox.',
@@ -338,7 +338,7 @@ class SiteSettings(db.Model):
         'contact_map_link': '',
         'contact_team_json': '[]',
         # SEO
-        'seo_title': 'Slidin GH — Premium Sneakers',
+        'seo_title': 'Slidein GH — Premium Sneakers',
         'seo_description': 'Shop authentic sneakers in Ghana. Fast delivery.',
         'seo_keywords': 'sneakers, shoes, ghana, nike, adidas',
         'seo_og_image': '',

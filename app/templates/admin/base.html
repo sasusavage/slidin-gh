@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>{% block title %}Admin{% endblock %} — Slidin GH</title>
+  <title>{% block title %}Admin{% endblock %} — Slidein GH</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
@@ -19,13 +19,13 @@
     <button class="admin-hamburger" onclick="openNav()" aria-label="Open menu">
       <span></span><span></span><span></span>
     </button>
-    <span class="admin-topbar__title">Slidin GH · Admin</span>
+    <span class="admin-topbar__title">Slidein GH · Admin</span>
   </div>
 
   <!-- Sidebar -->
   <aside class="admin-sidebar" id="adminSidebar">
     <button class="admin-sidebar__close" onclick="closeNav()" aria-label="Close menu">✕</button>
-    <div class="admin-sidebar__logo">Slidin GH · Admin</div>
+    <div class="admin-sidebar__logo">Slidein GH · Admin</div>
     <nav>
       <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint=='admin.dashboard' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>

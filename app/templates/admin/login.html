@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Admin Login — Slidin GH</title>
+  <title>Admin Login — Slidein GH</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
 </head>
 <body style="background:var(--black);min-height:100vh;display:flex;align-items:center;justify-content:center;">
 <div style="background:var(--white);padding:48px 40px;width:100%;max-width:360px;">
   <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:40px;">
-    Slidin GH · Admin
+    Slidein GH · Admin
   </p>
   {% if error %}
   <p style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:#c00;margin-bottom:20px;">{{ error }}</p>

@@ -1,4 +1,4 @@
--- Slidin GH — PostgreSQL Schema
+-- Slidein GH — PostgreSQL Schema
 -- Run: psql -U postgres -d slidin_store -f schema.sql
 -- Or use: flask db upgrade (after flask db init / flask db migrate)
 
