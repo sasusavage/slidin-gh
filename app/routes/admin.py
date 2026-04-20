@@ -6,7 +6,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (Product, ProductImage, ProductVariant, Category,
                          Order, OrderItem, Customer, AdminUser, SiteSettings,
                          Banner, Page, CouponCode, ProductReview,
-                         NotificationLog, NewsletterSignup, StockNotification)
+                         NotificationLog, NewsletterSignup, StockNotification,
+                         Supplier, PurchaseOrder, PurchaseOrderItem,
+                         StockAdjustment, StockMovement, Expense, BlogPost)
+import csv, io
 from app import db
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -855,3 +858,508 @@ def stock_alerts():
     items = StockNotification.query.filter_by(notified_at=None).order_by(
         StockNotification.created_at.desc()).all()
     return render_template('admin/stock_alerts.html', signups=items)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SUPPLIERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/suppliers')
+@admin_required
+def suppliers():
+    suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+    return render_template('admin/suppliers.html', suppliers=suppliers)
+
+
+@admin_bp.route('/suppliers/save', methods=['POST'])
+@admin_required
+def suppliers_save():
+    sid = request.form.get('id', '').strip()
+    if sid:
+        s = Supplier.query.get_or_404(sid)
+    else:
+        s = Supplier()
+        db.session.add(s)
+    s.name = request.form.get('name', '').strip()
+    s.contact_person = request.form.get('contact_person', '').strip()
+    s.phone = request.form.get('phone', '').strip()
+    s.email = request.form.get('email', '').strip()
+    s.address = request.form.get('address', '').strip()
+    s.notes = request.form.get('notes', '').strip()
+    db.session.commit()
+    flash('Supplier saved.', 'success')
+    return redirect(url_for('admin.suppliers'))
+
+
+@admin_bp.route('/suppliers/<sid>/delete', methods=['POST'])
+@admin_required
+def suppliers_delete(sid):
+    s = Supplier.query.get_or_404(sid)
+    s.is_active = False
+    db.session.commit()
+    flash('Supplier removed.', 'success')
+    return redirect(url_for('admin.suppliers'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PURCHASE ORDERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/purchase-orders')
+@admin_required
+def purchase_orders():
+    pos = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).all()
+    suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+    products = Product.query.filter_by(status='active').order_by(Product.name).all()
+    return render_template('admin/purchase_orders.html',
+                           purchase_orders=pos, suppliers=suppliers, products=products)
+
+
+@admin_bp.route('/purchase-orders/create', methods=['POST'])
+@admin_required
+def purchase_orders_create():
+    supplier_id = request.form.get('supplier_id')
+    payment_type = request.form.get('payment_type', 'cash')
+    notes = request.form.get('notes', '')
+    product_ids = request.form.getlist('product_id[]')
+    quantities = request.form.getlist('quantity[]')
+    unit_costs = request.form.getlist('unit_cost[]')
+
+    if not product_ids:
+        flash('Add at least one product.', 'error')
+        return redirect(url_for('admin.purchase_orders'))
+
+    # Generate PO number
+    count = PurchaseOrder.query.count() + 1
+    po_number = f'PO-{datetime.utcnow().strftime("%Y%m")}-{count:04d}'
+
+    po = PurchaseOrder(
+        po_number=po_number,
+        supplier_id=supplier_id or None,
+        payment_type=payment_type,
+        notes=notes,
+    )
+    db.session.add(po)
+    db.session.flush()
+
+    total = 0
+    for pid, qty, cost in zip(product_ids, quantities, unit_costs):
+        try:
+            qty = int(qty)
+            cost = float(cost)
+        except (ValueError, TypeError):
+            continue
+        tc = qty * cost
+        total += tc
+        item = PurchaseOrderItem(
+            purchase_order_id=po.id,
+            product_id=pid,
+            quantity_ordered=qty,
+            unit_cost=cost,
+            total_cost=tc,
+        )
+        db.session.add(item)
+
+    po.total_amount = total
+    db.session.commit()
+    flash(f'Purchase order {po_number} created.', 'success')
+    return redirect(url_for('admin.purchase_orders'))
+
+
+@admin_bp.route('/purchase-orders/<po_id>/receive', methods=['POST'])
+@admin_required
+def purchase_orders_receive(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    if po.status in ('received', 'cancelled'):
+        flash('This PO is already closed.', 'error')
+        return redirect(url_for('admin.purchase_orders'))
+
+    item_ids = request.form.getlist('item_id[]')
+    recv_qtys = request.form.getlist('received_qty[]')
+    fully_received = True
+
+    for iid, rq in zip(item_ids, recv_qtys):
+        item = PurchaseOrderItem.query.get(iid)
+        if not item:
+            continue
+        try:
+            rq = int(rq)
+        except (ValueError, TypeError):
+            continue
+        if rq <= 0:
+            continue
+        item.quantity_received += rq
+        # Update product stock
+        product = Product.query.get(item.product_id)
+        if product:
+            before = product.stock_quantity
+            product.stock_quantity += rq
+            mv = StockMovement(
+                product_id=product.id,
+                movement_type='purchase',
+                quantity_change=rq,
+                quantity_before=before,
+                quantity_after=product.stock_quantity,
+                reference_id=po.id,
+                reference_type='purchase_order',
+                notes=f'Received via PO {po.po_number}',
+            )
+            db.session.add(mv)
+        if item.quantity_received < item.quantity_ordered:
+            fully_received = False
+
+    po.status = 'received' if fully_received else 'partial'
+    db.session.commit()
+    flash('Stock updated from purchase order.', 'success')
+    return redirect(url_for('admin.purchase_orders'))
+
+
+@admin_bp.route('/purchase-orders/<po_id>/cancel', methods=['POST'])
+@admin_required
+def purchase_orders_cancel(po_id):
+    po = PurchaseOrder.query.get_or_404(po_id)
+    po.status = 'cancelled'
+    db.session.commit()
+    flash('Purchase order cancelled.', 'success')
+    return redirect(url_for('admin.purchase_orders'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  STOCK ADJUSTMENTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/stock-adjustments')
+@admin_required
+def stock_adjustments():
+    page = request.args.get('page', 1, type=int)
+    reason_filter = request.args.get('reason', '')
+    q = StockAdjustment.query.order_by(StockAdjustment.created_at.desc())
+    if reason_filter:
+        q = q.filter(StockAdjustment.reason == reason_filter)
+    adjustments = q.paginate(page=page, per_page=50, error_out=False)
+    products = Product.query.filter_by(status='active').order_by(Product.name).all()
+    reasons = ['damage', 'theft', 'correction', 'recount', 'expired', 'other']
+    return render_template('admin/stock_adjustments.html',
+                           adjustments=adjustments, products=products,
+                           reasons=reasons, reason_filter=reason_filter)
+
+
+@admin_bp.route('/stock-adjustments/create', methods=['POST'])
+@admin_required
+def stock_adjustments_create():
+    product_id = request.form.get('product_id')
+    reason = request.form.get('reason', 'correction')
+    new_qty = request.form.get('quantity_after', type=int)
+    notes = request.form.get('notes', '')
+
+    product = Product.query.get_or_404(product_id)
+    before = product.stock_quantity
+    change = new_qty - before
+
+    adj = StockAdjustment(
+        product_id=product.id,
+        reason=reason,
+        quantity_before=before,
+        quantity_after=new_qty,
+        quantity_change=change,
+        notes=notes,
+    )
+    db.session.add(adj)
+    product.stock_quantity = new_qty
+
+    mv = StockMovement(
+        product_id=product.id,
+        movement_type='adjustment',
+        quantity_change=change,
+        quantity_before=before,
+        quantity_after=new_qty,
+        reference_id=adj.id,
+        reference_type='stock_adjustment',
+        notes=f'{reason}: {notes}',
+    )
+    db.session.add(mv)
+    db.session.commit()
+    flash(f'Stock adjusted: {product.name} → {new_qty} units.', 'success')
+    return redirect(url_for('admin.stock_adjustments'))
+
+
+# Stock movement log
+@admin_bp.route('/stock-movements')
+@admin_required
+def stock_movements():
+    page = request.args.get('page', 1, type=int)
+    movements = StockMovement.query.order_by(
+        StockMovement.created_at.desc()).paginate(page=page, per_page=50, error_out=False)
+    return render_template('admin/stock_movements.html', movements=movements)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  EXPENSES
+# ══════════════════════════════════════════════════════════════════════════════
+
+EXPENSE_CATEGORIES = [
+    'Rent', 'Utilities', 'Salaries', 'Marketing', 'Packaging',
+    'Shipping Costs', 'Equipment', 'Software', 'Miscellaneous',
+]
+
+@admin_bp.route('/expenses')
+@admin_required
+def expenses():
+    page = request.args.get('page', 1, type=int)
+    cat_filter = request.args.get('category', '')
+    start = request.args.get('start', '')
+    end = request.args.get('end', '')
+
+    q = Expense.query.order_by(Expense.expense_date.desc(), Expense.created_at.desc())
+    if cat_filter:
+        q = q.filter(Expense.category == cat_filter)
+    if start:
+        try:
+            q = q.filter(Expense.expense_date >= datetime.strptime(start, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+    if end:
+        try:
+            q = q.filter(Expense.expense_date <= datetime.strptime(end, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+
+    expenses_page = q.paginate(page=page, per_page=50, error_out=False)
+    total = db.session.query(func.sum(Expense.amount)).scalar() or 0
+    return render_template('admin/expenses.html',
+                           expenses=expenses_page, total=total,
+                           categories=EXPENSE_CATEGORIES,
+                           cat_filter=cat_filter, start=start, end=end)
+
+
+@admin_bp.route('/expenses/save', methods=['POST'])
+@admin_required
+def expenses_save():
+    eid = request.form.get('id', '').strip()
+    if eid:
+        e = Expense.query.get_or_404(eid)
+    else:
+        e = Expense()
+        db.session.add(e)
+    e.category = request.form.get('category', 'Miscellaneous')
+    e.amount = float(request.form.get('amount', 0))
+    e.description = request.form.get('description', '')
+    date_str = request.form.get('expense_date', '')
+    try:
+        e.expense_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        e.expense_date = datetime.utcnow().date()
+    db.session.commit()
+    flash('Expense saved.', 'success')
+    return redirect(url_for('admin.expenses'))
+
+
+@admin_bp.route('/expenses/<eid>/delete', methods=['POST'])
+@admin_required
+def expenses_delete(eid):
+    e = Expense.query.get_or_404(eid)
+    db.session.delete(e)
+    db.session.commit()
+    flash('Expense deleted.', 'success')
+    return redirect(url_for('admin.expenses'))
+
+
+@admin_bp.route('/expenses/export')
+@admin_required
+def expenses_export():
+    expenses = Expense.query.order_by(Expense.expense_date.desc()).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Date', 'Category', 'Amount (GH₵)', 'Description'])
+    for e in expenses:
+        writer.writerow([e.expense_date, e.category, float(e.amount), e.description or ''])
+    output.seek(0)
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype='application/octet-stream',
+        headers={'Content-Disposition': 'attachment; filename=expenses.csv'}
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AI INSIGHTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/ai-insights')
+@admin_required
+def ai_insights():
+    return render_template('admin/ai_insights.html')
+
+
+@admin_bp.route('/api/ai/insights')
+@admin_required
+def api_ai_insights():
+    from app.ai_engine import get_insights
+    data = get_insights(current_app._get_current_object())
+    return jsonify(data)
+
+
+@admin_bp.route('/api/ai/chat', methods=['POST'])
+@admin_required
+def api_ai_chat():
+    from app.ai_engine import chat
+    msg = (request.json or {}).get('message', '').strip()
+    if not msg:
+        return jsonify({'response': 'Please enter a message.'}), 400
+    reply = chat(current_app._get_current_object(), msg)
+    return jsonify({'response': reply})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  END-OF-DAY REPORT
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/eod')
+@admin_required
+def eod_report():
+    date_str = request.args.get('date', datetime.utcnow().strftime('%Y-%m-%d'))
+    try:
+        report_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        report_date = datetime.utcnow().date()
+
+    orders = Order.query.filter(
+        func.date(Order.created_at) == report_date,
+        Order.status != 'cancelled',
+    ).all()
+
+    total_orders = len(orders)
+    total_revenue = sum(float(o.total) for o in orders)
+    total_delivery = sum(float(o.delivery_fee) for o in orders)
+
+    # Payment breakdown
+    payment_breakdown = {}
+    for o in orders:
+        pm = o.payment_method or 'cash_on_delivery'
+        payment_breakdown[pm] = payment_breakdown.get(pm, 0) + float(o.total)
+
+    # Top 5 products
+    from collections import Counter
+    item_counts = Counter()
+    for o in orders:
+        for item in o.items:
+            item_counts[item.product_name] += item.quantity
+    top_products = item_counts.most_common(5)
+
+    # Expenses today
+    today_expenses = db.session.query(func.sum(Expense.amount))\
+        .filter(Expense.expense_date == report_date).scalar() or 0
+
+    return render_template('admin/eod_report.html',
+                           report_date=report_date,
+                           date_str=date_str,
+                           total_orders=total_orders,
+                           total_revenue=total_revenue,
+                           total_delivery=total_delivery,
+                           payment_breakdown=payment_breakdown,
+                           top_products=top_products,
+                           today_expenses=float(today_expenses))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ORDERS — CSV export
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/orders/export')
+@admin_required
+def orders_export():
+    orders = Order.query.order_by(Order.created_at.desc()).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Order #', 'Date', 'Customer', 'Phone', 'City',
+                     'Subtotal', 'Delivery', 'Total', 'Status', 'Payment'])
+    for o in orders:
+        writer.writerow([
+            o.order_number,
+            o.created_at.strftime('%Y-%m-%d %H:%M'),
+            o.delivery_name, o.delivery_phone, o.delivery_city,
+            float(o.subtotal), float(o.delivery_fee), float(o.total),
+            o.status, o.payment_method,
+        ])
+    output.seek(0)
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype='application/octet-stream',
+        headers={'Content-Disposition': 'attachment; filename=orders.csv'}
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  BLOG / POSTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/blog')
+@admin_required
+def blog():
+    posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
+    return render_template('admin/blog.html', posts=posts)
+
+
+@admin_bp.route('/blog/new', methods=['GET', 'POST'])
+@admin_required
+def blog_new():
+    if request.method == 'POST':
+        return _blog_save(None)
+    return render_template('admin/blog_edit.html', post=None)
+
+
+@admin_bp.route('/blog/<post_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def blog_edit(post_id):
+    post = BlogPost.query.get_or_404(post_id)
+    if request.method == 'POST':
+        return _blog_save(post)
+    return render_template('admin/blog_edit.html', post=post)
+
+
+def _blog_save(post):
+    is_new = post is None
+    if is_new:
+        post = BlogPost()
+        db.session.add(post)
+    post.title = request.form.get('title', '').strip()
+    raw_slug = request.form.get('slug', '').strip() or post.title.lower()
+    post.slug = re.sub(r'[^a-z0-9-]', '-', raw_slug.lower()).strip('-')
+    post.excerpt = request.form.get('excerpt', '').strip()
+    post.body = request.form.get('body', '').strip()
+    post.seo_title = request.form.get('seo_title', '').strip()
+    post.seo_description = request.form.get('seo_description', '').strip()
+    status = request.form.get('status', 'draft')
+    post.status = status
+    if status == 'published' and not post.published_at:
+        post.published_at = datetime.utcnow()
+    db.session.commit()
+    flash('Post saved.', 'success')
+    return redirect(url_for('admin.blog'))
+
+
+@admin_bp.route('/blog/<post_id>/delete', methods=['POST'])
+@admin_required
+def blog_delete(post_id):
+    post = BlogPost.query.get_or_404(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    flash('Post deleted.', 'success')
+    return redirect(url_for('admin.blog'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  BANNER ADMIN (full CRUD already exists — add activate/deactivate toggle)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/banners/<banner_id>/toggle', methods=['POST'])
+@admin_required
+def banners_toggle(banner_id):
+    b = Banner.query.get_or_404(banner_id)
+    b.is_active = not b.is_active
+    db.session.commit()
+    state = 'activated' if b.is_active else 'deactivated'
+    flash(f'Banner {state}.', 'success')
+    return redirect(url_for('admin.banners'))

@@ -1,0 +1,92 @@
+{% extends "admin/base.html" %}
+{% block title %}Stock Adjustments — Admin{% endblock %}
+{% block content %}
+<div class="admin-page-title">Stock Adjustments</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;">
+
+  <!-- Create adjustment form -->
+  <div style="background:#f9f9f9;border:1px solid #e0e0e0;padding:24px;">
+    <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:18px;">New Adjustment</p>
+    <form method="post" action="{{ url_for('admin.stock_adjustments_create') }}">
+      <div class="admin-field">
+        <label>Product *</label>
+        <select name="product_id" required>
+          <option value="">Select product…</option>
+          {% for p in products %}
+          <option value="{{ p.id }}">{{ p.name }} (current: {{ p.stock_quantity }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="admin-field">
+        <label>Reason *</label>
+        <select name="reason" required>
+          {% for r in reasons %}
+          <option value="{{ r }}">{{ r|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="admin-field">
+        <label>New Quantity *</label>
+        <input type="number" name="quantity_after" min="0" required placeholder="Enter correct stock count"/>
+      </div>
+      <div class="admin-field">
+        <label>Notes</label>
+        <textarea name="notes" rows="2" placeholder="What happened?"></textarea>
+      </div>
+      <button type="submit" class="btn btn--black btn--full">Save Adjustment</button>
+    </form>
+  </div>
+
+  <!-- Filter -->
+  <div>
+    <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:18px;">Filter by Reason</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <a href="{{ url_for('admin.stock_adjustments') }}"
+         class="btn {% if not reason_filter %}btn--black{% else %}btn--outline{% endif %}"
+         style="padding:6px 12px;font-size:0.65rem;">All</a>
+      {% for r in reasons %}
+      <a href="{{ url_for('admin.stock_adjustments', reason=r) }}"
+         class="btn {% if reason_filter==r %}btn--black{% else %}btn--outline{% endif %}"
+         style="padding:6px 12px;font-size:0.65rem;">{{ r|title }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="table-scroll">
+<table class="data-table">
+  <thead>
+    <tr><th>Date</th><th>Product</th><th>Reason</th><th>Before</th><th>After</th><th>Change</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    {% for a in adjustments.items %}
+    <tr>
+      <td style="white-space:nowrap;">{{ a.created_at.strftime('%d %b %Y %H:%M') }}</td>
+      <td>{{ a.product.name if a.product else '—' }}</td>
+      <td><span class="badge badge--{{ 'cancelled' if a.reason in ('damage','theft','expired') else 'confirmed' }}">{{ a.reason|title }}</span></td>
+      <td>{{ a.quantity_before }}</td>
+      <td><strong>{{ a.quantity_after }}</strong></td>
+      <td style="color:{{ '#059669' if a.quantity_change > 0 else '#dc2626' }};font-weight:600;">
+        {{ '+' if a.quantity_change > 0 else '' }}{{ a.quantity_change }}
+      </td>
+      <td style="color:#888;font-size:0.75rem;">{{ a.notes or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px;">No adjustments yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if adjustments.pages > 1 %}
+<div class="pagination">
+  {% for p in adjustments.iter_pages() %}
+    {% if p %}
+      <a href="{{ url_for('admin.stock_adjustments', page=p, reason=reason_filter) }}"
+         class="{{ 'current' if p == adjustments.page else '' }}">{{ p }}</a>
+    {% else %}<span>…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

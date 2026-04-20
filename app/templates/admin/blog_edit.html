@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Edit Post' if post else 'New Post' }} — Admin{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
+  <a href="{{ url_for('admin.blog') }}" style="font-size:0.72rem;color:#888;text-decoration:underline;">← Posts</a>
+  <div class="admin-page-title" style="margin-bottom:0;">{{ 'Edit Post' if post else 'New Post' }}</div>
+</div>
+
+<form method="post" action="{{ url_for('admin.blog_edit', post_id=post.id) if post else url_for('admin.blog_new') }}">
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
+
+    <div>
+      <div class="admin-field">
+        <label>Title *</label>
+        <input name="title" required value="{{ post.title if post else '' }}"
+               style="font-size:1rem;" oninput="autoSlug(this.value)"/>
+      </div>
+      <div class="admin-field">
+        <label>Slug (URL)</label>
+        <input name="slug" id="slug-field" value="{{ post.slug if post else '' }}"
+               placeholder="auto-generated-from-title"/>
+      </div>
+      <div class="admin-field">
+        <label>Excerpt</label>
+        <textarea name="excerpt" rows="2" placeholder="Short summary shown on blog listing…">{{ post.excerpt if post else '' }}</textarea>
+      </div>
+      <div class="admin-field">
+        <label>Body *</label>
+        <textarea name="body" rows="18" required
+                  style="font-family:monospace;font-size:0.82rem;"
+                  placeholder="Supports HTML. Write your post here…">{{ post.body if post else '' }}</textarea>
+      </div>
+    </div>
+
+    <div>
+      <div style="border:1px solid #e0e0e0;padding:20px;margin-bottom:16px;">
+        <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">Publish</p>
+        <div class="admin-field">
+          <label>Status</label>
+          <select name="status">
+            <option value="draft" {{ 'selected' if (not post or post.status=='draft') }}>Draft</option>
+            <option value="published" {{ 'selected' if (post and post.status=='published') }}>Published</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--black btn--full">Save Post</button>
+      </div>
+
+      <div style="border:1px solid #e0e0e0;padding:20px;">
+        <p style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">SEO</p>
+        <div class="admin-field">
+          <label>SEO Title</label>
+          <input name="seo_title" value="{{ post.seo_title if post else '' }}" placeholder="Overrides page title in search"/>
+        </div>
+        <div class="admin-field">
+          <label>Meta Description</label>
+          <textarea name="seo_description" rows="3" placeholder="160 chars max">{{ post.seo_description if post else '' }}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+function autoSlug(title){
+  var s = document.getElementById('slug-field');
+  if(s.dataset.manual) return;
+  s.value = title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+document.getElementById('slug-field').addEventListener('input',function(){ this.dataset.manual='1'; });
+</script>
+{% endblock %}

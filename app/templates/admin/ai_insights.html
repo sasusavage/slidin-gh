@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+{% block title %}AI Insights — Admin{% endblock %}
+{% block content %}
+<div class="admin-page-title">AI Business Insights</div>
+
+<!-- Health card -->
+<div id="insights-card" style="border:1px solid #e0e0e0;padding:28px;margin-bottom:28px;background:#fafafa;">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+    <div id="health-badge" style="padding:8px 18px;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;background:#e5e7eb;color:#374151;">
+      Loading…
+    </div>
+    <p id="health-summary" style="font-size:0.85rem;color:#555;"></p>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+    <div>
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#dc2626;margin-bottom:8px;">
+        🚨 Urgent Actions
+      </p>
+      <ul id="urgent-actions" style="list-style:disc;padding-left:18px;font-size:0.82rem;color:#333;line-height:1.8;"></ul>
+    </div>
+    <div>
+      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#059669;margin-bottom:8px;">
+        💡 Opportunities
+      </p>
+      <ul id="opportunities" style="list-style:disc;padding-left:18px;font-size:0.82rem;color:#333;line-height:1.8;"></ul>
+    </div>
+  </div>
+  <div style="margin-top:16px;border-top:1px solid #e0e0e0;padding-top:14px;display:flex;gap:32px;">
+    <div>
+      <span style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;">7-Day Forecast</span>
+      <p id="forecast" style="font-size:1.3rem;font-weight:700;margin-top:2px;">—</p>
+    </div>
+    <div>
+      <span style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;">Generated</span>
+      <p id="generated-at" style="font-size:0.78rem;color:#888;margin-top:4px;">—</p>
+    </div>
+  </div>
+</div>
+
+<!-- Chat -->
+<div style="border:1px solid #e0e0e0;padding:24px;">
+  <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:16px;">
+    🤖 Ask Your Business AI
+  </p>
+  <div id="chat-log" style="min-height:120px;max-height:320px;overflow-y:auto;margin-bottom:16px;
+       border:1px solid #f0f0f0;padding:16px;background:#fff;font-size:0.82rem;line-height:1.7;color:#333;">
+    <p style="color:#aaa;">Ask anything about your sales, stock, or strategy…</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <input id="chat-input" type="text" placeholder="e.g. Why are sales low this week?"
+           style="flex:1;padding:10px 14px;border:1px solid #e0e0e0;font-size:0.82rem;"
+           onkeydown="if(event.key==='Enter') sendChat()"/>
+    <button class="btn btn--black" onclick="sendChat()" style="padding:10px 18px;">Send</button>
+  </div>
+</div>
+
+<script>
+// Load insights on page open
+(function(){
+  fetch('/admin/api/ai/insights')
+    .then(r=>r.json())
+    .then(function(d){
+      var badge = document.getElementById('health-badge');
+      var colors = {GREEN:'background:#d1fae5;color:#065f46', AMBER:'background:#fef3c7;color:#92400e', RED:'background:#fee2e2;color:#991b1b'};
+      badge.style.cssText = (colors[d.health_rating]||'background:#e5e7eb;color:#374151')+';padding:8px 18px;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;';
+      badge.textContent = d.health_rating || '—';
+      document.getElementById('health-summary').textContent = d.health_summary || '';
+      var ua = document.getElementById('urgent-actions');
+      ua.innerHTML = (d.urgent_actions||[]).map(a=>'<li>'+a+'</li>').join('')||'<li style="color:#aaa;">None — looking good!</li>';
+      var op = document.getElementById('opportunities');
+      op.innerHTML = (d.opportunities||[]).map(a=>'<li>'+a+'</li>').join('')||'<li style="color:#aaa;">Check back tomorrow.</li>';
+      if(d.revenue_forecast_7d != null)
+        document.getElementById('forecast').textContent = 'GH₵'+parseFloat(d.revenue_forecast_7d).toLocaleString('en-GH',{minimumFractionDigits:2});
+      if(d.generated_at)
+        document.getElementById('generated-at').textContent = new Date(d.generated_at).toLocaleString();
+    })
+    .catch(function(){ document.getElementById('health-badge').textContent='AI Unavailable'; });
+})();
+
+function sendChat(){
+  var input = document.getElementById('chat-input');
+  var msg = input.value.trim();
+  if(!msg) return;
+  var log = document.getElementById('chat-log');
+  log.innerHTML += '<p><strong>You:</strong> '+msg+'</p>';
+  input.value = '';
+  log.innerHTML += '<p id="typing" style="color:#aaa;">AI is thinking…</p>';
+  log.scrollTop = log.scrollHeight;
+  fetch('/admin/api/ai/chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({message: msg}),
+  }).then(r=>r.json()).then(function(d){
+    document.getElementById('typing').remove();
+    log.innerHTML += '<p><strong>AI:</strong> '+d.response.replace(/\n/g,'<br>')+'</p>';
+    log.scrollTop = log.scrollHeight;
+  }).catch(function(){
+    document.getElementById('typing').textContent = 'AI unavailable. Try again.';
+  });
+}
+</script>
+{% endblock %}

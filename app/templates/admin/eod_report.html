@@ -1,0 +1,100 @@
+{% extends "admin/base.html" %}
+{% block title %}End of Day Report — Admin{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;">
+  <div class="admin-page-title" style="margin-bottom:0;">End of Day Report</div>
+  <form method="get" style="display:flex;gap:8px;align-items:center;">
+    <input type="date" name="date" value="{{ date_str }}"
+           style="border:1px solid #e0e0e0;padding:8px;font-size:0.78rem;"/>
+    <button type="submit" class="btn btn--black" style="padding:8px 14px;font-size:0.7rem;">Load</button>
+  </form>
+</div>
+
+<div style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:28px;">
+  Report for {{ report_date.strftime('%A, %d %B %Y') }}
+</div>
+
+<!-- KPI row -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#000;margin-bottom:32px;">
+  <div style="background:#fff;padding:20px;">
+    <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Total Orders</p>
+    <p style="font-size:2rem;font-weight:700;">{{ total_orders }}</p>
+  </div>
+  <div style="background:#fff;padding:20px;">
+    <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Revenue</p>
+    <p style="font-size:2rem;font-weight:700;">{{ total_revenue|currency }}</p>
+  </div>
+  <div style="background:#fff;padding:20px;">
+    <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Delivery Fees</p>
+    <p style="font-size:2rem;font-weight:700;">{{ total_delivery|currency }}</p>
+  </div>
+  <div style="background:#fff;padding:20px;">
+    <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Expenses</p>
+    <p style="font-size:2rem;font-weight:700;color:{% if today_expenses > 0 %}#dc2626{% else %}#000{% endif %};">
+      {{ today_expenses|currency }}</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+  <!-- Payment breakdown -->
+  <div style="border:1px solid #e0e0e0;padding:24px;">
+    <p style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px;">Payment Breakdown</p>
+    {% if payment_breakdown %}
+    <table class="data-table">
+      <thead><tr><th>Method</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for method, amt in payment_breakdown.items() %}
+        <tr>
+          <td>{{ method|replace('_',' ')|title }}</td>
+          <td><strong>{{ amt|currency }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#aaa;font-size:0.78rem;">No orders this day.</p>
+    {% endif %}
+  </div>
+
+  <!-- Top products -->
+  <div style="border:1px solid #e0e0e0;padding:24px;">
+    <p style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px;">Top Products</p>
+    {% if top_products %}
+    <table class="data-table">
+      <thead><tr><th>Product</th><th>Units Sold</th></tr></thead>
+      <tbody>
+        {% for name, qty in top_products %}
+        <tr><td>{{ name }}</td><td><strong>{{ qty }}</strong></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#aaa;font-size:0.78rem;">No products sold today.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Net position -->
+{% if total_orders > 0 %}
+<div style="margin-top:24px;border:1px solid #000;padding:24px;background:#f9f9f9;">
+  <p style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px;">Net Position</p>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;">
+    <div>
+      <span style="font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:0.1em;">Revenue</span>
+      <p style="font-size:1.2rem;font-weight:700;color:#059669;">+{{ total_revenue|currency }}</p>
+    </div>
+    <div>
+      <span style="font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:0.1em;">Expenses</span>
+      <p style="font-size:1.2rem;font-weight:700;color:#dc2626;">−{{ today_expenses|currency }}</p>
+    </div>
+    <div>
+      <span style="font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:0.1em;">Net</span>
+      {% set net = total_revenue - today_expenses %}
+      <p style="font-size:1.4rem;font-weight:700;color:{{ '#059669' if net >= 0 else '#dc2626' }};">
+        {{ net|currency }}</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

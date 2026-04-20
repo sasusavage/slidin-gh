@@ -1,5 +1,5 @@
 """
-Pluggable SMS + email sender.
+Pluggable SMS + email sender. Also includes Telegram push notifications.
 
 To wire up a real provider later:
   - set SMS_PROVIDER env var ("hubtel" or "mnotify")
@@ -151,3 +151,55 @@ def _send_via_mnotify(phone, message):
 
 def _send_via_smtp(to, subject, body):
     raise NotImplementedError('SMTP email integration not wired.')
+
+
+# ── Telegram alerts ───────────────────────────────────────────────────────────
+
+import threading
+
+
+def _send_telegram(message):
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+    if not token or not chat_id:
+        return
+    try:
+        import requests as _req
+        _req.post(
+            f'https://api.telegram.org/bot{token}/sendMessage',
+            json={'chat_id': chat_id, 'text': message, 'parse_mode': 'HTML'},
+            timeout=8,
+        )
+    except Exception:
+        pass
+
+
+def send_telegram(message):
+    """Fire-and-forget Telegram message in a daemon thread."""
+    threading.Thread(target=_send_telegram, args=(message,), daemon=True).start()
+
+
+def telegram_new_order(order):
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not token:
+        return
+    msg = (
+        f'🛒 <b>New Order — Slidein GH</b>\n'
+        f'#{order.order_number} · GH₵{float(order.total):,.2f}\n'
+        f'{order.delivery_name} · {order.delivery_city}\n'
+        f'Payment: {order.payment_method}'
+    )
+    send_telegram(msg)
+
+
+def telegram_low_stock(products):
+    if not products:
+        return
+    lines = ['⚠️ <b>Low Stock — Slidein GH</b>']
+    for p in products[:10]:
+        lines.append(f'• {p.name}: {p.stock_quantity} left')
+    send_telegram('\n'.join(lines))
+
+
+def telegram_daily_report(report_text):
+    send_telegram(f'📊 <b>Daily Report — Slidein GH</b>\n\n{report_text[:3500]}')

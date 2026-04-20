@@ -1,0 +1,133 @@
+{% extends "admin/base.html" %}
+{% block title %}Purchase Orders — Admin{% endblock %}
+{% block content %}
+<div class="admin-page-title">Purchase Orders</div>
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+  <button class="btn btn--black" onclick="document.getElementById('create-po-form').style.display='block'">+ New PO</button>
+</div>
+
+<!-- Create PO form -->
+<div id="create-po-form" style="display:none;background:#f9f9f9;border:1px solid #e0e0e0;padding:24px;margin-bottom:32px;">
+  <h3 style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:20px;">New Purchase Order</h3>
+  <form method="post" action="{{ url_for('admin.purchase_orders_create') }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="admin-field">
+        <label>Supplier</label>
+        <select name="supplier_id">
+          <option value="">— Walk-in / No supplier —</option>
+          {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="admin-field">
+        <label>Payment Type</label>
+        <select name="payment_type">
+          <option value="cash">Cash</option>
+          <option value="credit">Credit</option>
+        </select>
+      </div>
+      <div class="admin-field">
+        <label>Notes</label>
+        <input name="notes" placeholder="Optional notes"/>
+      </div>
+    </div>
+
+    <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Items</p>
+    <div id="po-items">
+      <div class="po-item-row" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;margin-bottom:8px;align-items:center;">
+        <select name="product_id[]" required>
+          <option value="">Select product</option>
+          {% for p in products %}<option value="{{ p.id }}">{{ p.name }} ({{ p.stock_quantity }} in stock)</option>{% endfor %}
+        </select>
+        <input type="number" name="quantity[]" placeholder="Qty" min="1" required/>
+        <input type="number" name="unit_cost[]" placeholder="Unit cost" step="0.01" min="0" required/>
+        <button type="button" onclick="this.closest('.po-item-row').remove()" style="color:#dc2626;font-size:1.2rem;background:none;border:none;cursor:pointer;">×</button>
+      </div>
+    </div>
+    <button type="button" class="btn btn--outline" style="font-size:0.7rem;padding:8px 14px;margin-top:8px;"
+            onclick="addPORow()">+ Add Row</button>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button type="button" class="btn btn--outline" onclick="document.getElementById('create-po-form').style.display='none'">Cancel</button>
+      <button type="submit" class="btn btn--black">Create PO</button>
+    </div>
+  </form>
+</div>
+
+<!-- PO list -->
+<div class="table-scroll">
+<table class="data-table">
+  <thead>
+    <tr><th>PO #</th><th>Supplier</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for po in purchase_orders %}
+    <tr>
+      <td><strong>{{ po.po_number }}</strong></td>
+      <td>{{ po.supplier.name if po.supplier else '—' }}</td>
+      <td>{{ po.order_date.strftime('%d %b %Y') }}</td>
+      <td>{{ po.items|length }}</td>
+      <td>{{ po.total_amount|currency }}</td>
+      <td>
+        <span class="badge badge--{{ po.status }}">{{ po.status|title }}</span>
+      </td>
+      <td>
+        {% if po.status in ('pending', 'partial') %}
+        <button class="btn btn--outline" style="padding:5px 10px;font-size:0.65rem;"
+                onclick="openReceive('{{ po.id }}', {{ po.items|tojson }})">Receive</button>
+        <form method="post" action="{{ url_for('admin.purchase_orders_cancel', po_id=po.id) }}"
+              style="display:inline;" onsubmit="return confirm('Cancel PO?')">
+          <button class="btn" style="padding:5px 10px;font-size:0.65rem;color:#dc2626;border:1px solid #dc2626;">Cancel</button>
+        </form>
+        {% else %}
+        <span style="color:#aaa;font-size:0.72rem;">{{ po.status|title }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px;">No purchase orders yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<!-- Receive modal -->
+<div id="receive-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.45);">
+  <div style="background:#fff;max-width:560px;margin:80px auto;padding:32px;border-radius:2px;max-height:80vh;overflow-y:auto;">
+    <h3 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:20px;">Receive Stock</h3>
+    <form method="post" id="receive-form">
+      <div id="receive-items"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+        <button type="button" class="btn btn--outline" onclick="closeReceive()">Cancel</button>
+        <button type="submit" class="btn btn--black">Confirm Receipt</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+var poItemsTemplate = document.querySelector('.po-item-row').outerHTML;
+function addPORow(){
+  var d=document.createElement('div');
+  d.innerHTML=poItemsTemplate;
+  document.getElementById('po-items').appendChild(d.firstElementChild);
+}
+
+function openReceive(poId, items){
+  var form=document.getElementById('receive-form');
+  form.action='/admin/purchase-orders/'+poId+'/receive';
+  var html='';
+  items.forEach(function(it){
+    html+='<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:10px;align-items:center;">'
+      +'<label style="font-size:0.78rem;">'+it.product.name+'<br><small style="color:#888;">Ordered: '+it.quantity_ordered+' | Received: '+it.quantity_received+'</small></label>'
+      +'<input type="number" name="received_qty[]" placeholder="Qty to receive" min="0" value="'+(it.quantity_ordered-it.quantity_received)+'" style="padding:8px;border:1px solid #ddd;"/>'
+      +'<input type="hidden" name="item_id[]" value="'+it.id+'"/>'
+      +'</div>';
+  });
+  document.getElementById('receive-items').innerHTML=html;
+  document.getElementById('receive-modal').style.display='block';
+}
+function closeReceive(){ document.getElementById('receive-modal').style.display='none'; }
+document.getElementById('receive-modal').addEventListener('click',function(e){ if(e.target===this) closeReceive(); });
+</script>
+{% endblock %}

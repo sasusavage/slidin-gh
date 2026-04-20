@@ -26,6 +26,14 @@ def create_app(config_name=None):
     app.register_blueprint(orders_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
+    # Start background scheduler (low-stock alerts + daily AI report)
+    if not app.config.get('TESTING'):
+        try:
+            from app.scheduler import start_scheduler
+            start_scheduler(app)
+        except Exception:
+            pass
+
     @app.template_filter('currency')
     def currency_filter(value):
         try:

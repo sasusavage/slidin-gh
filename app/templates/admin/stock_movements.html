@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% block title %}Stock Movements — Admin{% endblock %}
+{% block content %}
+<div class="admin-page-title">Stock Movement Log</div>
+
+<div class="table-scroll">
+<table class="data-table">
+  <thead>
+    <tr><th>Date</th><th>Product</th><th>Type</th><th>Change</th><th>Before</th><th>After</th><th>Reference</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    {% for m in movements.items %}
+    <tr>
+      <td style="white-space:nowrap;">{{ m.created_at.strftime('%d %b %Y %H:%M') }}</td>
+      <td>{{ m.product.name if m.product else '—' }}</td>
+      <td>
+        <span class="badge badge--{% if m.movement_type == 'sale' %}cancelled{% elif m.movement_type == 'purchase' %}delivered{% elif m.movement_type == 'adjustment' %}processing{% else %}confirmed{% endif %}">
+          {{ m.movement_type|replace('_',' ')|title }}
+        </span>
+      </td>
+      <td style="font-weight:700;color:{{ '#059669' if m.quantity_change > 0 else '#dc2626' }};">
+        {{ '+' if m.quantity_change > 0 else '' }}{{ m.quantity_change }}
+      </td>
+      <td>{{ m.quantity_before }}</td>
+      <td><strong>{{ m.quantity_after }}</strong></td>
+      <td style="font-size:0.72rem;color:#888;">
+        {% if m.reference_type %}{{ m.reference_type|replace('_',' ')|title }}{% endif %}
+      </td>
+      <td style="font-size:0.72rem;color:#888;max-width:160px;">{{ m.notes or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" style="text-align:center;color:#aaa;padding:32px;">No movements yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if movements.pages > 1 %}
+<div class="pagination">
+  {% for p in movements.iter_pages() %}
+    {% if p %}
+      <a href="{{ url_for('admin.stock_movements', page=p) }}"
+         class="{{ 'current' if p == movements.page else '' }}">{{ p }}</a>
+    {% else %}<span>…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

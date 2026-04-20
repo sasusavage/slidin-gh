@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}Blog Posts — Admin{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+  <div class="admin-page-title" style="margin-bottom:0;">Blog Posts</div>
+  <a href="{{ url_for('admin.blog_new') }}" class="btn btn--black">+ New Post</a>
+</div>
+
+<div class="table-scroll">
+<table class="data-table">
+  <thead>
+    <tr><th>Title</th><th>Slug</th><th>Status</th><th>Published</th><th>Created</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for post in posts %}
+    <tr>
+      <td><strong>{{ post.title }}</strong></td>
+      <td style="font-size:0.72rem;color:#888;">/blog/{{ post.slug }}</td>
+      <td>
+        <span class="badge badge--{{ 'delivered' if post.status=='published' else 'pending' }}">
+          {{ post.status|title }}
+        </span>
+      </td>
+      <td style="font-size:0.75rem;">
+        {{ post.published_at.strftime('%d %b %Y') if post.published_at else '—' }}
+      </td>
+      <td style="font-size:0.75rem;">{{ post.created_at.strftime('%d %b %Y') }}</td>
+      <td>
+        <a href="{{ url_for('admin.blog_edit', post_id=post.id) }}"
+           class="btn btn--outline" style="padding:5px 10px;font-size:0.65rem;">Edit</a>
+        <form method="post" action="{{ url_for('admin.blog_delete', post_id=post.id) }}"
+              style="display:inline;" onsubmit="return confirm('Delete post?')">
+          <button class="btn" style="padding:5px 10px;font-size:0.65rem;color:#dc2626;border:1px solid #dc2626;">Del</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align:center;color:#aaa;padding:32px;">No posts yet. Create your first one.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

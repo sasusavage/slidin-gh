@@ -2,7 +2,7 @@ from flask import (Blueprint, render_template, request, session, jsonify,
                    url_for, Response)
 from app.models import (Product, Category, ProductVariant, SiteSettings,
                          Page, ProductReview, StockNotification, NewsletterSignup,
-                         Order)
+                         Order, BlogPost)
 from app import db
 from datetime import datetime
 from sqlalchemy import func
@@ -296,6 +296,25 @@ def webmanifest():
              'type': 'image/png'},
         ],
     })
+
+
+# ── Blog ─────────────────────────────────────────────────────────────────────
+
+@store_bp.route('/blog')
+def blog():
+    posts = BlogPost.query.filter_by(status='published')\
+        .order_by(BlogPost.published_at.desc()).all()
+    return render_template('blog.html', posts=posts)
+
+
+@store_bp.route('/blog/<slug>')
+def blog_post(slug):
+    post = BlogPost.query.filter_by(slug=slug, status='published').first_or_404()
+    related = BlogPost.query.filter(
+        BlogPost.status == 'published',
+        BlogPost.id != post.id
+    ).order_by(BlogPost.published_at.desc()).limit(3).all()
+    return render_template('blog_post.html', post=post, related=related)
 
 
 # ── Cart (session-based) ──────────────────────────────────────────────────────

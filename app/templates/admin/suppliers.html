@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% block title %}Suppliers — Admin{% endblock %}
+{% block content %}
+<div class="admin-page-title">Suppliers</div>
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+  <button class="btn btn--black" onclick="openModal()">+ Add Supplier</button>
+</div>
+
+<div class="table-scroll">
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Address</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in suppliers %}
+    <tr>
+      <td><strong>{{ s.name }}</strong></td>
+      <td>{{ s.contact_person or '—' }}</td>
+      <td>{{ s.phone or '—' }}</td>
+      <td>{{ s.email or '—' }}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.address or '—' }}</td>
+      <td>
+        <button class="btn btn--outline" style="padding:5px 10px;font-size:0.65rem;"
+                onclick='editSupplier({{ s|tojson }})'>Edit</button>
+        <form method="post" action="{{ url_for('admin.suppliers_delete', sid=s.id) }}"
+              style="display:inline;" onsubmit="return confirm('Delete supplier?')">
+          <button class="btn" style="padding:5px 10px;font-size:0.65rem;color:#dc2626;border:1px solid #dc2626;">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align:center;color:#aaa;padding:32px;">No suppliers yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<!-- Modal -->
+<div id="supplier-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.45);">
+  <div style="background:#fff;max-width:520px;margin:80px auto;padding:32px;border-radius:2px;">
+    <h3 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;"
+        id="modal-title">Add Supplier</h3>
+    <form method="post" action="{{ url_for('admin.suppliers_save') }}">
+      <input type="hidden" name="id" id="s-id"/>
+      <div class="admin-field"><label>Name *</label><input name="name" id="s-name" required/></div>
+      <div class="admin-field"><label>Contact Person</label><input name="contact_person" id="s-contact"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="admin-field"><label>Phone</label><input name="phone" id="s-phone"/></div>
+        <div class="admin-field"><label>Email</label><input name="email" id="s-email" type="email"/></div>
+      </div>
+      <div class="admin-field"><label>Address</label><input name="address" id="s-address"/></div>
+      <div class="admin-field"><label>Notes</label><textarea name="notes" id="s-notes" rows="2"></textarea></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+        <button type="button" class="btn btn--outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn--black">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(){ document.getElementById('supplier-modal').style.display='block'; }
+function closeModal(){ document.getElementById('supplier-modal').style.display='none'; }
+function editSupplier(s){
+  document.getElementById('modal-title').textContent='Edit Supplier';
+  document.getElementById('s-id').value=s.id;
+  document.getElementById('s-name').value=s.name||'';
+  document.getElementById('s-contact').value=s.contact_person||'';
+  document.getElementById('s-phone').value=s.phone||'';
+  document.getElementById('s-email').value=s.email||'';
+  document.getElementById('s-address').value=s.address||'';
+  document.getElementById('s-notes').value=s.notes||'';
+  openModal();
+}
+document.getElementById('supplier-modal').addEventListener('click', function(e){
+  if(e.target===this) closeModal();
+});
+</script>
+{% endblock %}

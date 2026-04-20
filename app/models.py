@@ -491,3 +491,111 @@ class CouponCode(db.Model):
         if self.end_date and now > self.end_date:
             return False
         return True
+
+
+# ── Supplier & purchasing ──────────────────────────────────────────────────
+
+class Supplier(db.Model):
+    __tablename__ = 'suppliers'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    name = db.Column(db.String(150), nullable=False)
+    contact_person = db.Column(db.String(120))
+    phone = db.Column(db.String(30))
+    email = db.Column(db.String(120))
+    address = db.Column(db.String(255))
+    notes = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    purchase_orders = db.relationship('PurchaseOrder', backref='supplier', lazy='dynamic')
+
+
+class PurchaseOrder(db.Model):
+    __tablename__ = 'purchase_orders'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    po_number = db.Column(db.String(30), unique=True, nullable=False)
+    supplier_id = db.Column(db.String(36), db.ForeignKey('suppliers.id'))
+    status = db.Column(db.String(20), default='pending')  # pending|partial|received|cancelled
+    payment_type = db.Column(db.String(20), default='cash')  # cash|credit
+    total_amount = db.Column(db.Numeric(12, 2), default=0)
+    notes = db.Column(db.Text)
+    order_date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    items = db.relationship('PurchaseOrderItem', backref='purchase_order', lazy=True,
+                             cascade='all, delete-orphan')
+
+
+class PurchaseOrderItem(db.Model):
+    __tablename__ = 'purchase_order_items'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    purchase_order_id = db.Column(db.String(36), db.ForeignKey('purchase_orders.id'), nullable=False)
+    product_id = db.Column(db.String(36), db.ForeignKey('products.id'))
+    quantity_ordered = db.Column(db.Integer, default=0)
+    quantity_received = db.Column(db.Integer, default=0)
+    unit_cost = db.Column(db.Numeric(12, 2), default=0)
+    total_cost = db.Column(db.Numeric(12, 2), default=0)
+
+    product = db.relationship('Product', foreign_keys=[product_id])
+
+
+# ── Stock management ───────────────────────────────────────────────────────
+
+class StockAdjustment(db.Model):
+    __tablename__ = 'stock_adjustments'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    product_id = db.Column(db.String(36), db.ForeignKey('products.id'))
+    reason = db.Column(db.String(50))  # damage|theft|correction|recount|expired|other
+    quantity_before = db.Column(db.Integer, default=0)
+    quantity_after = db.Column(db.Integer, default=0)
+    quantity_change = db.Column(db.Integer, default=0)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product', foreign_keys=[product_id])
+
+
+class StockMovement(db.Model):
+    __tablename__ = 'stock_movements'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    product_id = db.Column(db.String(36), db.ForeignKey('products.id'))
+    movement_type = db.Column(db.String(30))  # sale|purchase|adjustment|refund
+    quantity_change = db.Column(db.Integer, default=0)
+    quantity_before = db.Column(db.Integer, default=0)
+    quantity_after = db.Column(db.Integer, default=0)
+    reference_id = db.Column(db.String(36))
+    reference_type = db.Column(db.String(50))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product', foreign_keys=[product_id])
+
+
+# ── Expenses ───────────────────────────────────────────────────────────────
+
+class Expense(db.Model):
+    __tablename__ = 'expenses'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    category = db.Column(db.String(80), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    description = db.Column(db.Text)
+    expense_date = db.Column(db.Date, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ── Blog posts ─────────────────────────────────────────────────────────────
+
+class BlogPost(db.Model):
+    __tablename__ = 'blog_posts'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    slug = db.Column(db.String(120), unique=True, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    excerpt = db.Column(db.Text)
+    body = db.Column(db.Text)
+    cover_image = db.Column(db.String(500))
+    status = db.Column(db.String(20), default='draft')  # draft|published
+    published_at = db.Column(db.DateTime)
+    seo_title = db.Column(db.String(200))
+    seo_description = db.Column(db.String(300))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -236,9 +236,16 @@ def place_order():
     session.pop('coupon_label', None)
     session.modified = True
 
-    # Fire SMS + email confirmation (non-blocking: logs on failure, won't break checkout)
+    # Fire SMS + email confirmation (non-blocking)
     try:
         send_order_confirmation(order)
+    except Exception:
+        pass
+
+    # Fire Telegram alert to admin (non-blocking)
+    try:
+        from app.notifications import telegram_new_order
+        telegram_new_order(order)
     except Exception:
         pass
 
