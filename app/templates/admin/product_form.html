@@ -76,17 +76,21 @@
   </div>
 
   <!-- Images -->
-  {% if product and product.all_images %}
+  {% if product and product.images.count() > 0 %}
   <div class="admin-field">
-    <label>Current Images</label>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-      {% for img in product.all_images %}
-      <div style="position:relative;">
-        {% if img.endswith('.mp4') or img.endswith('.mov') or img.endswith('.webm') %}
-        <video src="{{ img }}" style="width:80px;height:100px;object-fit:cover;background:#000;" muted playsinline></video>
+    <label>Current Images (Click 'Remove' to delete)</label>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
+      {% for img in product.images %}
+      <div id="img-{{ img.id }}" style="position:relative; width:120px; border:2px solid #ff0000; padding:10px; border-radius:8px; background:#fff; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        {% if img.url.endswith('.mp4') or img.url.endswith('.mov') or img.url.endswith('.webm') %}
+        <video src="{{ img.url }}" style="width:100px;height:100px;object-fit:cover;background:#000; border-radius:4px;" muted playsinline></video>
         {% else %}
-        <img src="{{ img }}" style="width:80px;height:100px;object-fit:cover;background:var(--grey);"/>
+        <img src="{{ img.url }}" style="width:100px;height:100px;object-fit:cover;background:#f0f0f0; border-radius:4px;"/>
         {% endif %}
+        <button type="button" onclick="removeProductImage('{{ product.id }}', '{{ img.id }}')" 
+                style="margin-top:10px; background:#ff0000; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-size:0.7rem; font-weight:bold; cursor:pointer; width:100%;">
+          REMOVE
+        </button>
       </div>
       {% endfor %}
     </div>
@@ -165,6 +169,28 @@ function addVariantRow() {
   `;
   tbody.appendChild(row);
   row.querySelector('input').focus();
+}
+
+function removeProductImage(productId, imageId) {
+  if (!confirm('Are you sure you want to remove this image?')) return;
+  
+  fetch(`/admin/products/${productId}/image/${imageId}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      const el = document.getElementById(`img-${imageId}`);
+      if (el) el.remove();
+    } else {
+      alert('Error removing image.');
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Something went wrong.');
+  });
 }
 </script>
 {% endblock %}

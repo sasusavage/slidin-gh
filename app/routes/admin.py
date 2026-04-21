@@ -300,6 +300,17 @@ def product_delete(product_id):
 @admin_required
 def product_image_delete(product_id, image_id):
     img = ProductImage.query.filter_by(id=image_id, product_id=product_id).first_or_404()
+    
+    # Physically remove file
+    try:
+        if img.url.startswith('/static/uploads/'):
+            filename = os.path.basename(img.url)
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+
     db.session.delete(img)
     db.session.commit()
     return jsonify({'success': True})
