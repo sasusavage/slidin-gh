@@ -320,60 +320,111 @@ var colorBlockCount = parseInt(document.getElementById('product-form').dataset.c
 })();
 
 // ── Image upload & template preview ──────────────────────────────────────
-var IMAGE_TEMPLATES = [
-  {val:'', label:'Original (no template)'},
-  {val:'white_bg', label:'White Background'},
-  {val:'shadow', label:'Drop Shadow'},
-  {val:'studio', label:'Studio Light'},
-  {val:'gradient', label:'Gradient'},
-];
+var _loadedTemplates = null;
+
+function _getTemplates(cb){
+  if(_loadedTemplates){ cb(_loadedTemplates); return; }
+  fetch('{{ url_for("admin.api_image_templates") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      _loadedTemplates = [{id:'', name:'No Template', background_css:'#f5f5f5', background_image:null}].concat(data);
+      cb(_loadedTemplates);
+    })
+    .catch(function(){ _loadedTemplates = [{id:'', name:'No Template', background_css:'#f5f5f5', background_image:null}]; cb(_loadedTemplates); });
+}
+
+function _makeTemplatePicker(file, imgDataUrl){
+  // Returns a wrapper div containing the image composited on the selected template
+  var outer = document.createElement('div');
+  outer.style.cssText = 'width:140px;text-align:center;';
+
+  // Composite preview box
+  var box = document.createElement('div');
+  box.style.cssText = 'width:140px;height:110px;position:relative;overflow:hidden;border:1px solid #e0e0e0;display:block;';
+  var bgLayer = document.createElement('div');
+  bgLayer.style.cssText = 'position:absolute;inset:0;background:#f5f5f5;background-size:cover;background-position:center;z-index:1;';
+  box.appendChild(bgLayer);
+
+  var isVideo = file.type.startsWith('video');
+  var mediaEl;
+  if(isVideo){
+    mediaEl = document.createElement('video');
+    mediaEl.src = imgDataUrl;
+    mediaEl.muted = true;
+    mediaEl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;';
+  } else {
+    mediaEl = document.createElement('img');
+    mediaEl.src = imgDataUrl;
+    mediaEl.style.cssText = 'position:absolute;width:82%;height:82%;object-fit:contain;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;';
+  }
+  box.appendChild(mediaEl);
+  outer.appendChild(box);
+
+  // Hidden input for the selected template id
+  var hiddenInput = document.createElement('input');
+  hiddenInput.type = 'hidden';
+  hiddenInput.name = 'image_template[]';
+  hiddenInput.value = '';
+  outer.appendChild(hiddenInput);
+
+  // Template picker chips — built after templates are loaded
+  var chipsRow = document.createElement('div');
+  chipsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;justify-content:center;';
+  outer.appendChild(chipsRow);
+
+  function applyTemplate(t){
+    hiddenInput.value = t.id;
+    if(t.background_image){
+      bgLayer.style.background = 'url(\''+t.background_image+'\') center/cover no-repeat';
+    } else if(t.background_css){
+      bgLayer.style.background = t.background_css;
+    } else {
+      bgLayer.style.background = '#f5f5f5';
+    }
+    // Apply overlay CSS to the shoe image if not video
+    if(!isVideo && t.overlay_css){
+      mediaEl.style.cssText = 'position:absolute;width:82%;height:82%;object-fit:contain;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;'+t.overlay_css;
+    }
+    // highlight selected chip
+    chipsRow.querySelectorAll('.tmpl-chip').forEach(function(c){ c.style.background = c.dataset.tid === t.id ? '#111' : '#e5e7eb'; c.style.color = c.dataset.tid === t.id ? '#fff' : '#333'; });
+  }
+
+  _getTemplates(function(templates){
+    templates.forEach(function(t){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tmpl-chip';
+      chip.dataset.tid = t.id;
+      chip.textContent = t.name;
+      chip.style.cssText = 'font-size:0.55rem;padding:2px 6px;border:none;border-radius:20px;cursor:pointer;background:'+(t.id===''?'#111':'#e5e7eb')+';color:'+(t.id===''?'#fff':'#333')+';';
+      chip.addEventListener('click', function(){ applyTemplate(t); });
+      chipsRow.appendChild(chip);
+    });
+  });
+
+  // file label
+  var lbl = document.createElement('p');
+  lbl.textContent = file.name.length > 16 ? file.name.substring(0,13)+'…' : file.name;
+  lbl.style.cssText = 'font-size:0.58rem;color:#aaa;margin-top:3px;';
+  outer.appendChild(lbl);
+
+  return outer;
+}
 
 function previewImages(input){
   var list = document.getElementById('image-preview-list');
-  // Don't duplicate entries — rebuild from FileList
-  var existing = list.querySelectorAll('.img-preview-item');
-  // only append new ones
   var files = input.files;
   for(var i=0;i<files.length;i++){
-    (function(file, idx){
-      var wrap = document.createElement('div');
-      wrap.className = 'img-preview-item';
-      wrap.style.cssText = 'width:120px;text-align:center;';
+    (function(file){
       var reader = new FileReader();
       reader.onload = function(e){
-        var isVideo = file.type.startsWith('video');
-        if(isVideo){
-          var vid = document.createElement('video');
-          vid.src = e.target.result;
-          vid.style.cssText = 'width:120px;height:100px;object-fit:cover;border:1px solid #e0e0e0;display:block;';
-          vid.muted = true;
-          wrap.appendChild(vid);
-        } else {
-          var img = document.createElement('img');
-          img.src = e.target.result;
-          img.style.cssText = 'width:120px;height:100px;object-fit:cover;border:1px solid #e0e0e0;display:block;';
-          wrap.appendChild(img);
-        }
-        // Template selector
-        var sel = document.createElement('select');
-        sel.name = 'image_template[]';
-        sel.style.cssText = 'width:120px;font-size:0.65rem;padding:4px;border:1px solid #e0e0e0;margin-top:4px;';
-        IMAGE_TEMPLATES.forEach(function(t){
-          var opt = document.createElement('option');
-          opt.value = t.val;
-          opt.textContent = t.label;
-          sel.appendChild(opt);
-        });
-        wrap.appendChild(sel);
-        // Label
-        var lbl = document.createElement('p');
-        lbl.textContent = file.name.length > 15 ? file.name.substring(0,12)+'…' : file.name;
-        lbl.style.cssText = 'font-size:0.6rem;color:#aaa;margin-top:3px;';
-        wrap.appendChild(lbl);
-        list.appendChild(wrap);
+        var item = document.createElement('div');
+        item.className = 'img-preview-item';
+        item.appendChild(_makeTemplatePicker(file, e.target.result));
+        list.appendChild(item);
       };
       reader.readAsDataURL(file);
-    })(files[i], i);
+    })(files[i]);
   }
   document.getElementById('upload-area').style.borderColor = '#000';
 }

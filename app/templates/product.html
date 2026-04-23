@@ -8,25 +8,40 @@
 
   <!-- Gallery -->
   <div class="pdp__gallery">
-    {% set images = product.all_images %}
-    {% set first = images[0] if images else '/static/img/placeholder.jpg' %}
-    {% if first.endswith('.mp4') or first.endswith('.mov') or first.endswith('.webm') %}
-    <video id="gallery-main" class="pdp__gallery-main" src="{{ first }}"
-           autoplay muted loop playsinline style="object-fit:cover;"></video>
-    {% else %}
-    <img id="gallery-main" class="pdp__gallery-main" src="{{ first }}" alt="{{ product.name }}"/>
-    {% endif %}
-    {% if images|length > 1 %}
+    {% set img_objs = product.images.all() %}
+    {% set first_obj = img_objs[0] if img_objs else None %}
+    {% set first = first_obj.url if first_obj else '/static/img/placeholder.jpg' %}
+    {% set first_bg = first_obj.template_bg_style if first_obj else None %}
+    {% set first_ov = first_obj.template_overlay_css if first_obj else None %}
+    <div class="pdp__gallery-main-wrap" id="gallery-main-wrap"
+         style="position:relative;{% if first_bg %}background:{{ first_bg }};background-size:cover;background-position:center;{% endif %}">
+      {% if first.endswith('.mp4') or first.endswith('.mov') or first.endswith('.webm') %}
+      <video id="gallery-main" class="pdp__gallery-main" src="{{ first }}"
+             autoplay muted loop playsinline style="object-fit:cover;"></video>
+      {% else %}
+      <img id="gallery-main" class="pdp__gallery-main" src="{{ first }}" alt="{{ product.name }}"
+           style="{% if first_bg %}object-fit:contain;padding:6%;{% endif %}{% if first_ov %}{{ first_ov }}{% endif %}"/>
+      {% endif %}
+    </div>
+    {% if img_objs|length > 1 %}
     <div class="pdp__thumbs">
-      {% for img in images %}
-      {% if img.endswith('.mp4') or img.endswith('.mov') or img.endswith('.webm') %}
-      <div class="pdp__thumb {% if loop.first %}active{% endif %}" data-src="{{ img }}" data-type="video"
+      {% for img_obj in img_objs %}
+      {% set tbg = img_obj.template_bg_style %}
+      {% if img_obj.url.endswith('.mp4') or img_obj.url.endswith('.mov') or img_obj.url.endswith('.webm') %}
+      <div class="pdp__thumb {% if loop.first %}active{% endif %}"
+           data-src="{{ img_obj.url }}" data-type="video" data-bg=""
            style="width:64px;height:80px;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid #eee;">
         <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       </div>
       {% else %}
-      <img class="pdp__thumb {% if loop.first %}active{% endif %}"
-           src="{{ img }}" data-src="{{ img }}" data-type="image" alt="{{ product.name }} {{ loop.index }}"/>
+      <div class="pdp__thumb-wrap {% if loop.first %}active{% endif %}"
+           data-src="{{ img_obj.url }}" data-type="image"
+           data-bg="{{ tbg or '' }}"
+           data-overlay="{{ img_obj.template_overlay_css or '' }}"
+           style="width:64px;height:80px;cursor:pointer;border:1px solid #eee;{% if tbg %}background:{{ tbg }};background-size:cover;background-position:center;{% endif %}display:flex;align-items:center;justify-content:center;">
+        <img src="{{ img_obj.url }}" alt="{{ product.name }} {{ loop.index }}"
+             style="{% if tbg %}width:82%;height:82%;object-fit:contain;{% else %}width:100%;height:100%;object-fit:cover;{% endif %}"/>
+      </div>
       {% endif %}
       {% endfor %}
     </div>
@@ -531,14 +546,20 @@ document.getElementById('qty-plus').addEventListener('click', function(){
   });
 })();
 
-document.querySelectorAll('.pdp__thumb').forEach(function(thumb) {
+document.querySelectorAll('.pdp__thumb-wrap, .pdp__thumb').forEach(function(thumb) {
   thumb.addEventListener('click', function() {
-    document.querySelectorAll('.pdp__thumb').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.pdp__thumb-wrap, .pdp__thumb').forEach(function(t) { t.classList.remove('active'); });
     this.classList.add('active');
     var src = this.dataset.src;
     var type = this.dataset.type;
-    var container = document.getElementById('gallery-main').parentNode;
+    var bg = this.dataset.bg || '';
+    var overlay = this.dataset.overlay || '';
+    var wrap = document.getElementById('gallery-main-wrap');
     var existing = document.getElementById('gallery-main');
+    // Update wrap background
+    wrap.style.background = bg ? bg : '';
+    wrap.style.backgroundSize = bg ? 'cover' : '';
+    wrap.style.backgroundPosition = bg ? 'center' : '';
     if (type === 'video') {
       var vid = document.createElement('video');
       vid.id = 'gallery-main';
@@ -549,13 +570,15 @@ document.querySelectorAll('.pdp__thumb').forEach(function(thumb) {
       vid.loop = true;
       vid.setAttribute('playsinline', '');
       vid.style.objectFit = 'cover';
-      container.replaceChild(vid, existing);
+      wrap.replaceChild(vid, existing);
     } else {
       var img = document.createElement('img');
       img.id = 'gallery-main';
       img.className = existing.className;
       img.src = src;
-      container.replaceChild(img, existing);
+      if (bg) { img.style.objectFit = 'contain'; img.style.padding = '6%'; }
+      if (overlay) { img.style.cssText += ';' + overlay; }
+      wrap.replaceChild(img, existing);
     }
   });
 });

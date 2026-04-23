@@ -56,6 +56,10 @@ class Product(db.Model):
         return img.url if img else '/static/img/placeholder.jpg'
 
     @property
+    def primary_image_obj(self):
+        return self.images.first()
+
+    @property
     def all_images(self):
         return [i.url for i in self.images.all()]
 
@@ -95,8 +99,23 @@ class ProductImage(db.Model):
     url = db.Column(db.String(500), nullable=False)
     alt_text = db.Column(db.String(200))
     position = db.Column(db.Integer, default=0)
-    image_template = db.Column(db.String(50))  # e.g. 'white_bg', 'shadow', 'studio', None=original
+    image_template = db.Column(db.String(50))   # legacy slug or ImageTemplate.id
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def _get_tmpl(self):
+        if not self.image_template:
+            return None
+        return db.session.get(ImageTemplate, self.image_template)
+
+    @property
+    def template_bg_style(self):
+        t = self._get_tmpl()
+        return t.bg_style if t else None
+
+    @property
+    def template_overlay_css(self):
+        t = self._get_tmpl()
+        return t.overlay_css if t else None
 
 
 class ProductVariant(db.Model):
@@ -589,6 +608,30 @@ class Expense(db.Model):
     description = db.Column(db.Text)
     expense_date = db.Column(db.Date, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ── Image Templates ────────────────────────────────────────────────────────
+
+class ImageTemplate(db.Model):
+    """Reusable product-image backgrounds (studio setups the admin defines once)."""
+    __tablename__ = 'image_templates'
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    name = db.Column(db.String(100), nullable=False)          # e.g. "White Studio"
+    slug = db.Column(db.String(120), unique=True, nullable=False)
+    background_image = db.Column(db.String(500))              # uploaded BG file URL
+    background_css = db.Column(db.String(200))                # fallback CSS (color/gradient)
+    overlay_css = db.Column(db.String(300))                   # extra CSS on the product img
+    description = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def bg_style(self):
+        """CSS background property for use in templates."""
+        if self.background_image:
+            return f"url('{self.background_image}') center/cover no-repeat"
+        return self.background_css or '#f5f5f5'
 
 
 # ── Blog posts ─────────────────────────────────────────────────────────────

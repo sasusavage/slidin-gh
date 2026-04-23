@@ -88,8 +88,11 @@
 <div class="product-grid" style="margin:1px 1px 0;border-top:1px solid var(--black);">
   {% for product in products %}
   <a href="{{ url_for('store.product_detail', slug=product.slug) }}" class="product-card">
-    <div class="product-card__img-wrap">
-      <img class="product-card__img" src="{{ product.primary_image }}" alt="{{ product.name }}" loading="lazy"/>
+    {% set pi = product.primary_image_obj %}
+    {% set bg = pi.template_bg_style if pi else None %}
+    <div class="product-card__img-wrap"{% if bg %} style="background:{{ bg }};background-size:cover;background-position:center;"{% endif %}>
+      <img class="product-card__img" src="{{ product.primary_image }}" alt="{{ product.name }}" loading="lazy"
+           {% if bg %}style="object-fit:contain;padding:8%;"{% endif %}/>
       {% if product.compare_at_price %}<span class="product-card__badge">Sale</span>{% endif %}
       <button class="product-card__wishlist" data-wishlist-id="{{ product.id }}" aria-label="Save to wishlist"
               onclick="event.preventDefault();event.stopPropagation();window.toggleWishlist('{{ product.id }}', this);">

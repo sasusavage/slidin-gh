@@ -122,9 +122,13 @@
   <div class="product-grid" style="margin:0 1px;">
     {% for product in featured %}
     <a href="{{ url_for('store.product_detail', slug=product.slug) }}" class="product-card">
-      <div class="product-card__img-wrap">
+      {% set pi = product.primary_image_obj %}
+      {% set bg = pi.template_bg_style if pi else None %}
+      <div class="product-card__img-wrap"{% if bg %} style="background:{{ bg }};background-size:cover;background-position:center;"{% endif %}>
         <img class="product-card__img" src="{{ product.primary_image }}" alt="{{ product.name }}"
-             loading="lazy"/>
+             loading="lazy"{% if bg %} style="object-fit:contain;padding:8%;"{% endif %}
+             {% if pi and pi.template_overlay_css %}
+             onload="this.style.cssText+=';{{ pi.template_overlay_css|replace("'","\\'")|replace(";",";")|safe }}'"{% endif %}/>
         {% if product.compare_at_price %}
         <span class="product-card__badge">Sale</span>
         {% elif product.featured %}

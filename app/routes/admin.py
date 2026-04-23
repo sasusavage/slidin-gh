@@ -8,7 +8,8 @@ from app.models import (Product, ProductImage, ProductVariant, Category,
                          Banner, Page, CouponCode, ProductReview,
                          NotificationLog, NewsletterSignup, StockNotification,
                          Supplier, PurchaseOrder, PurchaseOrderItem,
-                         StockAdjustment, StockMovement, Expense, BlogPost)
+                         StockAdjustment, StockMovement, Expense, BlogPost,
+                         ImageTemplate)
 import csv, io
 from app import db
 from datetime import datetime, timedelta
@@ -1516,6 +1517,79 @@ def _reply_telegram(chat_id, text):
         )
     except Exception:
         pass
+
+
+# ── Image Templates ───────────────────────────────────────────────────────────
+
+@admin_bp.route('/image-templates')
+@admin_required
+def image_templates():
+    templates = ImageTemplate.query.order_by(ImageTemplate.sort_order, ImageTemplate.name).all()
+    return render_template('image_templates.html', templates=templates)
+
+
+@admin_bp.route('/image-templates/save', methods=['POST'])
+@admin_required
+def image_template_save():
+    tid = request.form.get('id', '').strip()
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash('Template name is required.', 'error')
+        return redirect(url_for('admin.image_templates'))
+
+    if tid:
+        tmpl = ImageTemplate.query.get_or_404(tid)
+    else:
+        tmpl = ImageTemplate()
+        db.session.add(tmpl)
+
+    tmpl.name = name
+    tmpl.slug = slugify(name) + '-' + str(uuid.uuid4())[:4]
+    tmpl.description = request.form.get('description', '').strip()
+    tmpl.background_css = request.form.get('background_css', '').strip()
+    tmpl.overlay_css = request.form.get('overlay_css', '').strip()
+    tmpl.sort_order = int(request.form.get('sort_order', 0) or 0)
+    tmpl.is_active = 'is_active' in request.form
+
+    # Background image upload
+    bg_file = request.files.get('background_image_file')
+    if bg_file and bg_file.filename and allowed_file(bg_file.filename):
+        ext = bg_file.filename.rsplit('.', 1)[1].lower()
+        fname = f'tmpl_{uuid.uuid4().hex}.{ext}'
+        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'templates')
+        os.makedirs(upload_dir, exist_ok=True)
+        bg_file.save(os.path.join(upload_dir, fname))
+        tmpl.background_image = url_for('static', filename=f'uploads/templates/{fname}')
+    elif request.form.get('background_image_url', '').strip():
+        tmpl.background_image = request.form.get('background_image_url').strip()
+
+    db.session.commit()
+    flash('Template saved.', 'success')
+    return redirect(url_for('admin.image_templates'))
+
+
+@admin_bp.route('/image-templates/delete/<tid>', methods=['POST'])
+@admin_required
+def image_template_delete(tid):
+    tmpl = ImageTemplate.query.get_or_404(tid)
+    db.session.delete(tmpl)
+    db.session.commit()
+    flash('Template deleted.', 'success')
+    return redirect(url_for('admin.image_templates'))
+
+
+@admin_bp.route('/api/image-templates')
+@admin_required
+def api_image_templates():
+    templates = ImageTemplate.query.filter_by(is_active=True).order_by(ImageTemplate.sort_order).all()
+    return jsonify([{
+        'id': t.id,
+        'name': t.name,
+        'background_image': t.background_image,
+        'background_css': t.background_css,
+        'overlay_css': t.overlay_css,
+        'bg_style': t.bg_style,
+    } for t in templates])
 
 
 @admin_bp.route('/telegram/setup')
