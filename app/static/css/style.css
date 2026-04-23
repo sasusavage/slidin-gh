@@ -1792,3 +1792,106 @@ ul, ol { list-style: none; }
    GENERAL — prevent any horizontal overflow
 ═══════════════════════════════════════════ */
 html, body { max-width: 100%; overflow-x: hidden; }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE FIXES — HOME PAGE
+═══════════════════════════════════════════ */
+
+/* Product card name: clamp to 2 lines so cards stay same height */
+.product-card__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Section padding tighter on small phones */
+@media (max-width: 480px) {
+  .section { padding: 40px 16px; }
+  .section-label { margin-bottom: 24px; }
+  .px { padding-left: 16px; padding-right: 16px; }
+}
+
+/* Hero CTA buttons — smaller on tiny screens */
+@media (max-width: 400px) {
+  .hero__actions { flex-direction: column; align-items: flex-start; }
+  .btn--lg { padding: 14px 24px; font-size: 0.7rem; }
+  .hero__title { margin-bottom: 28px; }
+}
+
+/* Hero subheadline font size on mobile */
+@media (max-width: 480px) {
+  .hero__content p { font-size: 0.78rem !important; }
+}
+
+/* Announcement bar — wrap long text safely */
+.announcement-bar {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 480px) {
+  .announcement-bar { white-space: normal; font-size: 0.6rem; padding: 8px 12px; }
+}
+
+/* Category tile label readable on 2-col mobile */
+@media (max-width: 480px) {
+  .category-tile__label { font-size: 0.58rem; padding: 24px 12px 12px; }
+}
+
+/* Cart drawer full-width on very small screens */
+@media (max-width: 380px) {
+  .cart-drawer { width: 100%; right: 0; }
+}
+
+/* Trust strip — ensure 3rd item right border on 2-col layout */
+@media (max-width: 640px) {
+  .trust-strip { grid-template-columns: 1fr 1fr; }
+  .trust-strip__item { padding: 16px 12px; }
+  .trust-strip__item:nth-child(2n) { border-right: none; }
+  .trust-strip__item:nth-child(2n+1) { border-right: 1px solid var(--black); }
+  .trust-strip__item:last-child { border-right: none; }
+}
+
+/* Quick view modal single column on narrow screens */
+@media (max-width: 520px) {
+  .qv-grid { grid-template-columns: 1fr !important; }
+  .modal__panel { padding: 0; border-radius: 12px 12px 0 0; }
+}
+
+/* Product grid — always 2 cols minimum even on tiny screens */
+@media (max-width: 320px) {
+  .product-grid { grid-template-columns: 1fr; }
+}
+
+/* Bottom nav safe area on iPhone */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Footer newsletter on mid-range tablets */
+@media (min-width: 481px) and (max-width: 900px) {
+  .footer__newsletter { grid-column: span 2; }
+}
+
+/* ═══════════════════════════════════════════
+   SMART UI — AI Description Generate button
+═══════════════════════════════════════════ */
+.ai-gen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: opacity 0.15s;
+}
+.ai-gen-btn:hover { opacity: 0.85; }
+.ai-gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ai-gen-btn svg { width: 14px; height: 14px; flex-shrink: 0; }

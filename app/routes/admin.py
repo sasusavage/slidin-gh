@@ -1519,6 +1519,59 @@ def _reply_telegram(chat_id, text):
         pass
 
 
+# ── AI Smart Helpers ──────────────────────────────────────────────────────────
+
+@admin_bp.route('/api/ai/generate-description', methods=['POST'])
+@admin_required
+def api_ai_generate_description():
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    brand = data.get('brand', '').strip()
+    if not name:
+        return jsonify({'error': 'Product name required'}), 400
+    try:
+        from app import ai_engine
+        prompt = (
+            f"Write a compelling, concise product description (3-4 sentences, no bullet points) "
+            f"for a sneaker called '{name}'"
+            + (f" by {brand}" if brand else "")
+            + ". Target Ghanaian sneaker enthusiasts. Focus on style, comfort, and exclusivity. "
+            "Keep it punchy and exciting. Do not include price."
+        )
+        client = ai_engine._groq_client()
+        resp = client.chat.completions.create(
+            model='llama-3.3-70b-versatile',
+            messages=[{'role': 'user', 'content': prompt}],
+            max_tokens=200,
+            temperature=0.8,
+        )
+        desc = resp.choices[0].message.content.strip()
+        return jsonify({'description': desc})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/api/ai/stale-products')
+@admin_required
+def api_ai_stale_products():
+    """Return products with zero sales in the last 30 days — suggest discounts."""
+    cutoff = datetime.utcnow() - timedelta(days=30)
+    sold_ids = db.session.query(OrderItem.product_id).join(Order).filter(
+        Order.created_at >= cutoff
+    ).distinct().subquery()
+    stale = Product.query.filter(
+        Product.status == 'active',
+        ~Product.id.in_(sold_ids)
+    ).order_by(Product.created_at).limit(10).all()
+    return jsonify([{
+        'id': p.id,
+        'name': p.name,
+        'price': float(p.price),
+        'days_listed': (datetime.utcnow() - p.created_at).days,
+        'url': url_for('admin.product_edit', product_id=p.id),
+    } for p in stale])
+
+
 # ── Image Templates ───────────────────────────────────────────────────────────
 
 @admin_bp.route('/image-templates')
