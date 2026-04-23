@@ -1,101 +1,359 @@
 {% extends "admin/base.html" %}
 {% block title %}AI Insights — Admin{% endblock %}
 {% block content %}
-<div class="admin-page-title">AI Business Insights</div>
 
-<!-- Health card -->
-<div id="insights-card" style="border:1px solid #e0e0e0;padding:28px;margin-bottom:28px;background:#fafafa;">
-  <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-    <div id="health-badge" style="padding:8px 18px;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;background:#e5e7eb;color:#374151;">
-      Loading…
-    </div>
-    <p id="health-summary" style="font-size:0.85rem;color:#555;"></p>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-    <div>
-      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#dc2626;margin-bottom:8px;">
-        🚨 Urgent Actions
-      </p>
-      <ul id="urgent-actions" style="list-style:disc;padding-left:18px;font-size:0.82rem;color:#333;line-height:1.8;"></ul>
-    </div>
-    <div>
-      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#059669;margin-bottom:8px;">
-        💡 Opportunities
-      </p>
-      <ul id="opportunities" style="list-style:disc;padding-left:18px;font-size:0.82rem;color:#333;line-height:1.8;"></ul>
-    </div>
-  </div>
-  <div style="margin-top:16px;border-top:1px solid #e0e0e0;padding-top:14px;display:flex;gap:32px;">
-    <div>
-      <span style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;">7-Day Forecast</span>
-      <p id="forecast" style="font-size:1.3rem;font-weight:700;margin-top:2px;">—</p>
-    </div>
-    <div>
-      <span style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;">Generated</span>
-      <p id="generated-at" style="font-size:0.78rem;color:#888;margin-top:4px;">—</p>
-    </div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <div class="admin-page-title" style="margin-bottom:0;">AI Business Insights</div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('admin.telegram_setup') }}" id="tg-setup-btn"
+       class="btn btn--outline" style="padding:8px 16px;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;"
+       onclick="setupTelegram(event)">
+      📱 Setup Telegram
+    </a>
+    <button class="btn btn--outline" onclick="loadInsights()" id="refresh-btn"
+            style="padding:8px 16px;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;">
+      ↺ Refresh
+    </button>
   </div>
 </div>
 
-<!-- Chat -->
-<div style="border:1px solid #e0e0e0;padding:24px;">
-  <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:16px;">
-    🤖 Ask Your Business AI
-  </p>
-  <div id="chat-log" style="min-height:120px;max-height:320px;overflow-y:auto;margin-bottom:16px;
-       border:1px solid #f0f0f0;padding:16px;background:#fff;font-size:0.82rem;line-height:1.7;color:#333;">
-    <p style="color:#aaa;">Ask anything about your sales, stock, or strategy…</p>
+<div id="tg-setup-result" style="display:none;padding:12px 16px;margin-bottom:20px;border:1px solid #e0e0e0;font-size:0.78rem;"></div>
+
+<!-- Live stats bar -->
+<div id="stats-bar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1px;background:#000;border:1px solid #000;margin-bottom:28px;opacity:0;transition:opacity 0.4s;">
+  <div style="background:#fff;padding:16px;">
+    <p style="font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;margin-bottom:4px;">Today</p>
+    <p id="stat-today-orders" style="font-size:1.4rem;font-weight:700;">—</p>
+    <p id="stat-today-rev" style="font-size:0.7rem;color:#555;">—</p>
   </div>
-  <div style="display:flex;gap:8px;">
-    <input id="chat-input" type="text" placeholder="e.g. Why are sales low this week?"
-           style="flex:1;padding:10px 14px;border:1px solid #e0e0e0;font-size:0.82rem;"
-           onkeydown="if(event.key==='Enter') sendChat()"/>
-    <button class="btn btn--black" onclick="sendChat()" style="padding:10px 18px;">Send</button>
+  <div style="background:#fff;padding:16px;">
+    <p style="font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;margin-bottom:4px;">7-Day Revenue</p>
+    <p id="stat-7d-rev" style="font-size:1.4rem;font-weight:700;">—</p>
+    <p id="stat-7d-orders" style="font-size:0.7rem;color:#555;">—</p>
+  </div>
+  <div style="background:#fff;padding:16px;">
+    <p style="font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;margin-bottom:4px;">30-Day Profit</p>
+    <p id="stat-profit" style="font-size:1.4rem;font-weight:700;">—</p>
+    <p style="font-size:0.7rem;color:#aaa;">est. after expenses</p>
+  </div>
+  <div style="background:#fff;padding:16px;">
+    <p style="font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;margin-bottom:4px;">Stock Issues</p>
+    <p id="stat-stock" style="font-size:1.4rem;font-weight:700;">—</p>
+    <p id="stat-stock-sub" style="font-size:0.7rem;color:#555;">—</p>
+  </div>
+  <div style="background:#fff;padding:16px;">
+    <p style="font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;margin-bottom:4px;">Customers</p>
+    <p id="stat-customers" style="font-size:1.4rem;font-weight:700;">—</p>
+    <p id="stat-repeat" style="font-size:0.7rem;color:#555;">—</p>
+  </div>
+  <div style="background:#fff;padding:16px;">
+    <p style="font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;margin-bottom:4px;">Pending Orders</p>
+    <p id="stat-pending" style="font-size:1.4rem;font-weight:700;">—</p>
+    <p style="font-size:0.7rem;color:#aaa;">need attention</p>
+  </div>
+</div>
+
+<!-- Health card -->
+<div id="insights-card" style="border:1px solid #e0e0e0;padding:28px;margin-bottom:28px;background:#fafafa;position:relative;">
+
+  <!-- Loading state -->
+  <div id="insights-loading" style="text-align:center;padding:32px;color:#aaa;">
+    <div style="font-size:1.5rem;margin-bottom:8px;">🤖</div>
+    <p style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;">Analysing your business…</p>
+  </div>
+
+  <!-- Content (hidden until loaded) -->
+  <div id="insights-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+      <div id="health-badge" style="padding:8px 20px;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">
+        —
+      </div>
+      <p id="health-summary" style="font-size:0.88rem;color:#333;flex:1;line-height:1.5;"></p>
+    </div>
+
+    <div id="key-metric-row" style="background:#fff;border:1px solid #e0e0e0;padding:12px 16px;margin-bottom:20px;font-size:0.82rem;display:none;">
+      💡 <span id="key-metric" style="color:#333;"></span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px;">
+      <div>
+        <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#dc2626;margin-bottom:10px;">🚨 Urgent Actions</p>
+        <ul id="urgent-actions" style="list-style:none;padding:0;font-size:0.82rem;color:#333;line-height:2;"></ul>
+      </div>
+      <div>
+        <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#059669;margin-bottom:10px;">💡 Opportunities</p>
+        <ul id="opportunities" style="list-style:none;padding:0;font-size:0.82rem;color:#333;line-height:2;"></ul>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #e0e0e0;padding-top:14px;display:flex;gap:40px;align-items:center;flex-wrap:wrap;">
+      <div>
+        <span style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;">7-Day Revenue Forecast</span>
+        <p id="forecast" style="font-size:1.4rem;font-weight:700;margin-top:2px;letter-spacing:-0.02em;">—</p>
+      </div>
+      <div>
+        <span style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;">Generated</span>
+        <p id="generated-at" style="font-size:0.75rem;color:#888;margin-top:4px;">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div id="insights-error" style="display:none;text-align:center;padding:24px;color:#dc2626;">
+    <p style="font-size:0.82rem;">⚠️ Could not load insights. Check your GROQ_API_KEY and try refreshing.</p>
+  </div>
+
+</div>
+
+<!-- Top Products -->
+<div id="top-products-wrap" style="display:none;border:1px solid #e0e0e0;padding:24px;margin-bottom:28px;background:#fff;">
+  <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:16px;">🏆 Top Products (30 Days)</p>
+  <div id="top-products-list"></div>
+</div>
+
+<!-- Chat -->
+<div style="border:1px solid #e0e0e0;background:#fff;">
+  <div style="border-bottom:1px solid #e0e0e0;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin:0;">🤖 Ask Your Business AI</p>
+    <button onclick="clearChat()" style="font-size:0.65rem;color:#aaa;background:none;border:none;cursor:pointer;text-decoration:underline;">Clear</button>
+  </div>
+
+  <div id="chat-log" style="min-height:140px;max-height:400px;overflow-y:auto;padding:20px 24px;font-size:0.82rem;line-height:1.75;color:#333;">
+    <p style="color:#bbb;font-style:italic;">Ask anything about your business…</p>
+  </div>
+
+  <!-- Suggested questions -->
+  <div id="suggestions" style="padding:0 24px 12px;display:flex;flex-wrap:wrap;gap:8px;">
+    <span style="font-size:0.6rem;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;width:100%;margin-bottom:4px;">Try asking:</span>
+    {% set questions = [
+      "Why are sales low this week?",
+      "What should I restock urgently?",
+      "How can I increase repeat customers?",
+      "What is my profit margin this month?",
+      "Which products should I promote on Instagram?"
+    ] %}
+    {% for q in questions %}
+    <button onclick="askQuestion(this.textContent)"
+            style="font-size:0.68rem;padding:5px 12px;border:1px solid #e0e0e0;background:#f9f9f9;cursor:pointer;color:#555;">
+      {{ q }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <div style="border-top:1px solid #e0e0e0;padding:16px 24px;display:flex;gap:8px;">
+    <input id="chat-input" type="text" placeholder="Ask about sales, stock, pricing, strategy…"
+           style="flex:1;padding:11px 14px;border:1px solid #e0e0e0;font-size:0.82rem;outline:none;"
+           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"/>
+    <button class="btn btn--black" onclick="sendChat()" id="send-btn"
+            style="padding:11px 20px;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">
+      Send
+    </button>
   </div>
 </div>
 
 <script>
-// Load insights on page open
-(function(){
+var chatHistory = [];
+
+function gh(n){ return 'GH₵'+parseFloat(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function esc(str){
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
+
+function loadInsights(){
+  var card = document.getElementById('insights-content');
+  var loading = document.getElementById('insights-loading');
+  var errEl = document.getElementById('insights-error');
+  card.style.display = 'none';
+  loading.style.display = 'block';
+  errEl.style.display = 'none';
+
+  var refreshBtn = document.getElementById('refresh-btn');
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = '⏳ Loading…';
+
   fetch('/admin/api/ai/insights')
     .then(r=>r.json())
     .then(function(d){
+      loading.style.display = 'none';
+      card.style.display = 'block';
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '↺ Refresh';
+
+      // Health badge
       var badge = document.getElementById('health-badge');
-      var colors = {GREEN:'background:#d1fae5;color:#065f46', AMBER:'background:#fef3c7;color:#92400e', RED:'background:#fee2e2;color:#991b1b'};
-      badge.style.cssText = (colors[d.health_rating]||'background:#e5e7eb;color:#374151')+';padding:8px 18px;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;';
+      var styles = {
+        GREEN: 'background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;',
+        AMBER: 'background:#fef3c7;color:#92400e;border:1px solid #fde68a;',
+        RED:   'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;',
+      };
+      badge.style.cssText = (styles[d.health_rating]||'background:#e5e7eb;color:#374151;border:1px solid #d1d5db;')
+        +'padding:8px 20px;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;';
       badge.textContent = d.health_rating || '—';
       document.getElementById('health-summary').textContent = d.health_summary || '';
+
+      // Key metric
+      if(d.key_metric){
+        document.getElementById('key-metric').textContent = d.key_metric;
+        document.getElementById('key-metric-row').style.display = 'block';
+      }
+
+      // Lists
       var ua = document.getElementById('urgent-actions');
-      ua.innerHTML = (d.urgent_actions||[]).map(a=>'<li>'+a+'</li>').join('')||'<li style="color:#aaa;">None — looking good!</li>';
+      ua.innerHTML = (d.urgent_actions||[]).map(a=>'<li style="padding:3px 0;border-bottom:1px solid #f5f5f5;">⚡ '+esc(a)+'</li>').join('')
+        || '<li style="color:#aaa;">None — looking good!</li>';
       var op = document.getElementById('opportunities');
-      op.innerHTML = (d.opportunities||[]).map(a=>'<li>'+a+'</li>').join('')||'<li style="color:#aaa;">Check back tomorrow.</li>';
-      if(d.revenue_forecast_7d != null)
-        document.getElementById('forecast').textContent = 'GH₵'+parseFloat(d.revenue_forecast_7d).toLocaleString('en-GH',{minimumFractionDigits:2});
+      op.innerHTML = (d.opportunities||[]).map(a=>'<li style="padding:3px 0;border-bottom:1px solid #f5f5f5;">→ '+esc(a)+'</li>').join('')
+        || '<li style="color:#aaa;">Check back tomorrow.</li>';
+
+      // Forecast
+      if(d.revenue_forecast_7d!=null)
+        document.getElementById('forecast').textContent = gh(d.revenue_forecast_7d);
       if(d.generated_at)
         document.getElementById('generated-at').textContent = new Date(d.generated_at).toLocaleString();
+
+      // Live stats bar from context
+      var ctx = d.context;
+      if(ctx){
+        var sb = document.getElementById('stats-bar');
+        sb.style.opacity = '1';
+        document.getElementById('stat-today-orders').textContent = ctx.sales_today.count + ' orders';
+        document.getElementById('stat-today-rev').textContent = gh(ctx.sales_today.revenue);
+        document.getElementById('stat-7d-rev').textContent = gh(ctx.sales_7d.revenue);
+        document.getElementById('stat-7d-orders').textContent = ctx.sales_7d.count + ' orders';
+        var profit = ctx.profit_estimate_30d;
+        var profitEl = document.getElementById('stat-profit');
+        profitEl.textContent = (profit >= 0 ? '' : '−') + gh(Math.abs(profit));
+        profitEl.style.color = profit >= 0 ? '#059669' : '#dc2626';
+        document.getElementById('stat-stock').textContent = ctx.out_of_stock_variants + ' out';
+        document.getElementById('stat-stock-sub').textContent = ctx.low_stock_variants + ' low stock';
+        document.getElementById('stat-customers').textContent = ctx.total_customers;
+        document.getElementById('stat-repeat').textContent = ctx.repeat_customers + ' repeat buyers';
+        document.getElementById('stat-pending').textContent = ctx.pending_orders;
+
+        // Top products
+        if(ctx.top_products && ctx.top_products.length){
+          var wrap = document.getElementById('top-products-wrap');
+          wrap.style.display = 'block';
+          var max_rev = ctx.top_products[0].revenue || 1;
+          var html = ctx.top_products.map(function(p,i){
+            var pct = Math.round(p.revenue/max_rev*100);
+            return '<div style="margin-bottom:12px;">'
+              +'<div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;">'
+              +'<span>'+(i+1)+'. '+esc(p.name)+'</span>'
+              +'<span style="font-weight:700;">'+gh(p.revenue)+' ('+p.units+' units)</span>'
+              +'</div>'
+              +'<div style="height:4px;background:#f0f0f0;">'
+              +'<div style="height:4px;background:#000;width:'+pct+'%;"></div>'
+              +'</div></div>';
+          }).join('');
+          document.getElementById('top-products-list').innerHTML = html;
+        }
+      }
     })
-    .catch(function(){ document.getElementById('health-badge').textContent='AI Unavailable'; });
-})();
+    .catch(function(e){
+      loading.style.display = 'none';
+      errEl.style.display = 'block';
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '↺ Retry';
+    });
+}
 
 function sendChat(){
   var input = document.getElementById('chat-input');
   var msg = input.value.trim();
   if(!msg) return;
-  var log = document.getElementById('chat-log');
-  log.innerHTML += '<p><strong>You:</strong> '+msg+'</p>';
+  var sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '…';
+  appendMessage('You', msg, '#000', '#f9f9f9');
   input.value = '';
-  log.innerHTML += '<p id="typing" style="color:#aaa;">AI is thinking…</p>';
-  log.scrollTop = log.scrollHeight;
+  document.getElementById('suggestions').style.display = 'none';
+
+  // Add user turn to history
+  chatHistory.push({role:'user', content:msg});
+
   fetch('/admin/api/ai/chat', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({message: msg}),
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({message: msg, history: chatHistory.slice(-6)}),
   }).then(r=>r.json()).then(function(d){
-    document.getElementById('typing').remove();
-    log.innerHTML += '<p><strong>AI:</strong> '+d.response.replace(/\n/g,'<br>')+'</p>';
-    log.scrollTop = log.scrollHeight;
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+    var reply = d.response || 'No response received.';
+    appendMessage('AI', reply, '#059669', '#fff');
+    chatHistory.push({role:'assistant', content:reply});
   }).catch(function(){
-    document.getElementById('typing').textContent = 'AI unavailable. Try again.';
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+    appendMessage('AI', 'Connection error — please try again.', '#dc2626', '#fff');
   });
 }
+
+function askQuestion(q){
+  document.getElementById('chat-input').value = q;
+  sendChat();
+}
+
+function appendMessage(from, text, color, bg){
+  var log = document.getElementById('chat-log');
+  // Clear placeholder on first message
+  if(log.querySelector('p[style*="bbb"]')){
+    log.innerHTML = '';
+  }
+  var div = document.createElement('div');
+  div.style.cssText = 'padding:12px 14px;margin-bottom:8px;background:'+bg+';border:1px solid #f0f0f0;';
+  var header = document.createElement('p');
+  header.style.cssText = 'font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:'+color+';margin-bottom:6px;';
+  header.textContent = from;
+  var body = document.createElement('p');
+  body.style.cssText = 'font-size:0.82rem;color:#333;line-height:1.7;white-space:pre-wrap;margin:0;';
+  body.textContent = text;
+  div.appendChild(header);
+  div.appendChild(body);
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearChat(){
+  chatHistory = [];
+  var log = document.getElementById('chat-log');
+  log.innerHTML = '<p style="color:#bbb;font-style:italic;">Ask anything about your business…</p>';
+  document.getElementById('suggestions').style.display = 'flex';
+}
+
+function setupTelegram(e){
+  e.preventDefault();
+  var btn = document.getElementById('tg-setup-btn');
+  btn.textContent = '⏳ Setting up…';
+  fetch('/admin/telegram/setup')
+    .then(r=>r.json())
+    .then(function(d){
+      btn.textContent = '📱 Setup Telegram';
+      var res = document.getElementById('tg-setup-result');
+      res.style.display = 'block';
+      if(d.ok || d.result){
+        res.style.background = '#d1fae5';
+        res.style.borderColor = '#a7f3d0';
+        res.innerHTML = '✅ <strong>Telegram webhook registered!</strong> Your bot is now connected. Send <code>/start</code> to your bot to begin chatting with the AI.';
+      } else {
+        res.style.background = '#fee2e2';
+        res.style.borderColor = '#fca5a5';
+        res.textContent = '❌ Setup failed: ' + (d.description || d.error || JSON.stringify(d));
+      }
+    })
+    .catch(function(e){
+      btn.textContent = '📱 Setup Telegram';
+      var res = document.getElementById('tg-setup-result');
+      res.style.display = 'block';
+      res.style.background = '#fee2e2';
+      res.textContent = '❌ Request failed: ' + e;
+    });
+}
+
+// Load on page open
+loadInsights();
 </script>
 {% endblock %}

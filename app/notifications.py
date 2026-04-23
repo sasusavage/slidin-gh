@@ -162,16 +162,19 @@ def _send_telegram(message):
     token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
     if not token or not chat_id:
+        log.debug('Telegram not configured — skipping alert')
         return
     try:
         import requests as _req
-        _req.post(
+        resp = _req.post(
             f'https://api.telegram.org/bot{token}/sendMessage',
             json={'chat_id': chat_id, 'text': message, 'parse_mode': 'HTML'},
-            timeout=8,
+            timeout=10,
         )
-    except Exception:
-        pass
+        if not resp.ok:
+            log.warning(f'Telegram API error: {resp.status_code} {resp.text[:200]}')
+    except Exception as e:
+        log.warning(f'Telegram send failed: {e}')
 
 
 def send_telegram(message):
@@ -183,23 +186,85 @@ def telegram_new_order(order):
     token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     if not token:
         return
+    # Collect item names
+    try:
+        items = order.items.all()
+        item_lines = '\n'.join(
+            f'  • {i.product_name}'
+            + (f' (Size {i.size})' if i.size else '')
+            + f' × {i.quantity}'
+            for i in items[:5]
+        )
+        if len(items) > 5:
+            item_lines += f'\n  …and {len(items)-5} more'
+    except Exception:
+        item_lines = '  • (items unavailable)'
+
+    site_url = os.environ.get('SITE_URL', '').rstrip('/')
+    admin_link = f'{site_url}/admin/orders' if site_url else '/admin/orders'
+
     msg = (
         f'🛒 <b>New Order — Slidein GH</b>\n'
-        f'#{order.order_number} · GH₵{float(order.total):,.2f}\n'
-        f'{order.delivery_name} · {order.delivery_city}\n'
-        f'Payment: {order.payment_method}'
+        f'────────────────\n'
+        f'📋 <b>{order.order_number}</b>\n'
+        f'👤 {order.delivery_name} · 📍 {order.delivery_city}\n'
+        f'📦 Items:\n{item_lines}\n'
+        f'💰 Total: <b>GH₵{float(order.total):,.2f}</b>\n'
+        f'💳 Payment: {order.payment_method.replace("_", " ").title()}\n'
+        f'🔗 <a href="{admin_link}">View in Admin</a>'
+    )
+    send_telegram(msg)
+
+
+def telegram_order_status(order):
+    """Alert when an order status changes to shipped or delivered."""
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not token:
+        return
+    icons = {'shipped': '🚚', 'delivered': '✅', 'cancelled': '❌', 'processing': '⚙️'}
+    icon = icons.get(order.status, '📦')
+    msg = (
+        f'{icon} <b>Order {order.status_label} — Slidein GH</b>\n'
+        f'#{order.order_number} · {order.delivery_name} · GH₵{float(order.total):,.2f}\n'
+        f'📍 {order.delivery_city}'
     )
     send_telegram(msg)
 
 
 def telegram_low_stock(products):
+    """products: list of Product objects with low stock_quantity, or dicts with name/qty."""
     if not products:
         return
-    lines = ['⚠️ <b>Low Stock — Slidein GH</b>']
-    for p in products[:10]:
-        lines.append(f'• {p.name}: {p.stock_quantity} left')
+    lines = ['⚠️ <b>Low Stock Alert — Slidein GH</b>', '────────────────']
+    for p in products[:15]:
+        if hasattr(p, 'name'):
+            qty = p.stock_quantity if hasattr(p, 'stock_quantity') else p.total_stock
+            lines.append(f'• {p.name}: <b>{qty}</b> left')
+        else:
+            lines.append(f'• {p}')
+    if len(products) > 15:
+        lines.append(f'…and {len(products)-15} more products')
+    lines.append('\n🔗 Check <b>Admin → Inventory</b> to restock.')
+    send_telegram('\n'.join(lines))
+
+
+def telegram_low_stock_variants(variants):
+    """variants: list of ProductVariant objects."""
+    if not variants:
+        return
+    lines = ['⚠️ <b>Low Stock — Slidein GH</b>', '────────────────']
+    for v in variants[:15]:
+        label = v.product.name if v.product else 'Unknown'
+        detail = []
+        if v.size:
+            detail.append(f'Size {v.size}')
+        if v.color:
+            detail.append(v.color)
+        lines.append(f'• {label} ({", ".join(detail)}): <b>{v.quantity}</b> left')
+    if len(variants) > 15:
+        lines.append(f'…and {len(variants)-15} more variants')
     send_telegram('\n'.join(lines))
 
 
 def telegram_daily_report(report_text):
-    send_telegram(f'📊 <b>Daily Report — Slidein GH</b>\n\n{report_text[:3500]}')
+    send_telegram(f'📊 <b>Daily Report — Slidein GH</b>\n\n{report_text[:3800]}')

@@ -29,14 +29,15 @@ def start_scheduler(app):
     def low_stock_check():
         with app.app_context():
             try:
-                from app.models import Product
-                from app.notifications import telegram_low_stock
-                low = Product.query.filter(
+                from app.models import ProductVariant, Product
+                from app.notifications import telegram_low_stock_variants
+                low = ProductVariant.query.join(Product).filter(
                     Product.status == 'active',
-                    Product.stock_quantity <= 5
+                    ProductVariant.quantity > 0,
+                    ProductVariant.quantity <= 5,
                 ).all()
                 if low:
-                    telegram_low_stock(low)
+                    telegram_low_stock_variants(low)
             except Exception as e:
                 log.exception(f'Low stock check failed: {e}')
 

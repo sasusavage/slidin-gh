@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Cart — Slidein GH{% endblock %}
+{% block search_bar %}{% endblock %}
+
+{% block content %}
+<div style="margin-top:56px;max-width:900px;margin-left:auto;margin-right:auto;padding:48px 20px 80px;">
+
+  <h1 style="font-size:clamp(1.6rem,5vw,2.8rem);font-weight:700;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:40px;">
+    Your Cart
+    {% if cart_items %}
+    <span style="font-size:0.9rem;font-weight:400;color:#888;margin-left:12px;">
+      {{ cart_items|sum(attribute='quantity') }} item{{ 's' if cart_items|sum(attribute='quantity') != 1 }}
+    </span>
+    {% endif %}
+  </h1>
+
+  {% if cart_items %}
+
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:32px;align-items:start;">
+
+    <!-- Items -->
+    <div id="cart-items">
+      {% for item in cart_items %}
+      <div class="cart-row" data-key="{{ item.key }}"
+           style="display:grid;grid-template-columns:80px 1fr auto;gap:16px;padding:20px 0;border-bottom:1px solid #e8e8e8;align-items:center;">
+        <a href="/shop">
+          <img src="{{ item.image }}" alt="{{ item.name }}"
+               style="width:80px;height:80px;object-fit:cover;display:block;"
+               onerror="this.src='/static/img/placeholder.jpg';this.onerror=null;"/>
+        </a>
+        <div>
+          <p style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:-0.01em;margin-bottom:4px;">{{ item.name }}</p>
+          <p style="font-size:0.72rem;color:#888;margin-bottom:10px;">
+            {% if item.size %}Size {{ item.size }}{% endif %}
+            {% if item.size and item.color %} · {% endif %}
+            {% if item.color %}{{ item.color }}{% endif %}
+          </p>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button onclick="changeQty('{{ item.key }}', -1)"
+                    style="width:28px;height:28px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">−</button>
+            <span id="qty-{{ item.key|replace('_','__') }}" style="font-size:0.85rem;font-weight:600;min-width:24px;text-align:center;">{{ item.quantity }}</span>
+            <button onclick="changeQty('{{ item.key }}', 1)"
+                    style="width:28px;height:28px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">+</button>
+            <button onclick="removeItem('{{ item.key }}')"
+                    style="margin-left:8px;background:none;border:none;color:#aaa;cursor:pointer;font-size:0.7rem;text-decoration:underline;">Remove</button>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <p id="line-{{ item.key|replace('_','__') }}" style="font-size:0.95rem;font-weight:700;">{{ (item.price * item.quantity)|currency }}</p>
+          <p style="font-size:0.65rem;color:#aaa;margin-top:4px;">{{ item.price|currency }} each</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Summary -->
+    <div style="background:#f9f9f9;border:1px solid #e8e8e8;padding:24px;position:sticky;top:76px;">
+      <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:20px;">Order Summary</p>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:10px;">
+        <span>Subtotal</span>
+        <span id="cart-subtotal">{{ subtotal|currency }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#888;margin-bottom:20px;">
+        <span>Delivery</span>
+        <span>{% if subtotal >= 500 %}Free{% else %}GH₵30.00{% endif %}</span>
+      </div>
+      <div style="border-top:1px solid #e0e0e0;padding-top:16px;display:flex;justify-content:space-between;font-size:1rem;font-weight:700;margin-bottom:24px;">
+        <span>Total</span>
+        <span>{{ (subtotal + (0 if subtotal >= 500 else 30))|currency }}</span>
+      </div>
+      <a href="{{ url_for('orders.checkout') }}" class="btn btn--black btn--full"
+         style="display:block;text-align:center;padding:14px;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;">
+        Proceed to Checkout
+      </a>
+      <a href="{{ url_for('store.shop') }}"
+         style="display:block;text-align:center;margin-top:12px;font-size:0.7rem;color:#888;text-decoration:underline;">
+        Continue Shopping
+      </a>
+    </div>
+
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:80px 0;">
+    <p style="font-size:3rem;margin-bottom:20px;">🛒</p>
+    <p style="font-size:0.78rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:32px;">Your cart is empty</p>
+    <a href="{{ url_for('store.shop') }}" class="btn btn--black" style="padding:14px 32px;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;">
+      Shop Now
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function safeKey(key){ return key.replace(/_/g,'__'); }
+
+function removeItem(key){
+  fetch('/cart/remove', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:key})
+  }).then(()=>location.reload());
+}
+
+function changeQty(key, delta){
+  var span = document.getElementById('qty-'+safeKey(key));
+  var current = parseInt(span.textContent);
+  var newQty = current + delta;
+  fetch('/cart/update', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:key, quantity:newQty})
+  }).then(r=>r.json()).then(data=>{
+    if(data.success){
+      if(newQty < 1){
+        location.reload();
+        return;
+      }
+      span.textContent = newQty;
+      // Update cart badge
+      var badge = document.getElementById('cart-count');
+      if(badge) badge.textContent = data.cart_count;
+    }
+  });
+}
+</script>
+{% endblock %}

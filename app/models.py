@@ -36,6 +36,12 @@ class Product(db.Model):
     featured = db.Column(db.Boolean, default=False)
     gender = db.Column(db.String(20))  # men, women, unisex
     brand = db.Column(db.String(100))
+    stock_quantity = db.Column(db.Integer, default=0)
+    # Pre-order settings
+    pre_order_enabled = db.Column(db.Boolean, default=False)
+    pre_order_price = db.Column(db.Numeric(10, 2))
+    pre_order_shipping_fee = db.Column(db.Numeric(10, 2))
+    pre_order_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -89,6 +95,7 @@ class ProductImage(db.Model):
     url = db.Column(db.String(500), nullable=False)
     alt_text = db.Column(db.String(200))
     position = db.Column(db.Integer, default=0)
+    image_template = db.Column(db.String(50))  # e.g. 'white_bg', 'shadow', 'studio', None=original
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -102,6 +109,7 @@ class ProductVariant(db.Model):
     sku = db.Column(db.String(100))
     price = db.Column(db.Numeric(10, 2))
     quantity = db.Column(db.Integer, default=0)
+    color_image = db.Column(db.String(500))  # per-color image URL
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property

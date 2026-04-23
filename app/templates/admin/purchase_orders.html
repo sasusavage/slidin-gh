@@ -74,7 +74,7 @@
       <td>
         {% if po.status in ('pending', 'partial') %}
         <button class="btn btn--outline" style="padding:5px 10px;font-size:0.65rem;"
-                onclick="openReceive('{{ po.id }}', {{ po.items|tojson }})">Receive</button>
+                onclick="openReceive('{{ po.id }}', {{ po.items|map(attribute='id')|list|tojson }}, {{ po.items|map(attribute='quantity_ordered')|list|tojson }}, {{ po.items|map(attribute='quantity_received')|list|tojson }}, {{ po.items|map(attribute='product')|map(attribute='name')|list|tojson }})">Receive</button>
         <form method="post" action="{{ url_for('admin.purchase_orders_cancel', po_id=po.id) }}"
               style="display:inline;" onsubmit="return confirm('Cancel PO?')">
           <button class="btn" style="padding:5px 10px;font-size:0.65rem;color:#dc2626;border:1px solid #dc2626;">Cancel</button>
@@ -113,17 +113,18 @@ function addPORow(){
   document.getElementById('po-items').appendChild(d.firstElementChild);
 }
 
-function openReceive(poId, items){
+function openReceive(poId, ids, ordered, received, names){
   var form=document.getElementById('receive-form');
   form.action='/admin/purchase-orders/'+poId+'/receive';
   var html='';
-  items.forEach(function(it){
+  for(var i=0;i<ids.length;i++){
+    var remaining=ordered[i]-received[i];
     html+='<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:10px;align-items:center;">'
-      +'<label style="font-size:0.78rem;">'+it.product.name+'<br><small style="color:#888;">Ordered: '+it.quantity_ordered+' | Received: '+it.quantity_received+'</small></label>'
-      +'<input type="number" name="received_qty[]" placeholder="Qty to receive" min="0" value="'+(it.quantity_ordered-it.quantity_received)+'" style="padding:8px;border:1px solid #ddd;"/>'
-      +'<input type="hidden" name="item_id[]" value="'+it.id+'"/>'
+      +'<label style="font-size:0.78rem;">'+names[i]+'<br><small style="color:#888;">Ordered: '+ordered[i]+' | Received: '+received[i]+'</small></label>'
+      +'<input type="number" name="received_qty[]" placeholder="Qty to receive" min="0" value="'+remaining+'" style="padding:8px;border:1px solid #ddd;"/>'
+      +'<input type="hidden" name="item_id[]" value="'+ids[i]+'"/>'
       +'</div>';
-  });
+  }
   document.getElementById('receive-items').innerHTML=html;
   document.getElementById('receive-modal').style.display='block';
 }

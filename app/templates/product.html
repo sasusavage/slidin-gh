@@ -55,18 +55,36 @@
       {% endif %}
     </p>
 
+    {# Build full variant map for JS: {color: {size: {id, qty, price}}} #}
+    {% set variant_data = {} %}
+    {% set color_images = {} %}
+    {% for v in product.variants %}
+      {% if v.color not in variant_data %}{% set _ = variant_data.update({v.color: {}}) %}{% endif %}
+      {% set _ = variant_data[v.color].update({v.size: {'id': v.id, 'qty': v.quantity, 'price': v.effective_price|float}}) %}
+      {% if v.color_image and v.color not in color_images %}
+        {% set _ = color_images.update({v.color: v.color_image}) %}
+      {% endif %}
+    {% endfor %}
+
     <!-- Color selector -->
     {% set colors = product.colors %}
     {% if colors %}
     <div>
       <span class="selector-label">Color — <span id="selected-color-label">{{ colors[0].name }}</span></span>
-      <div class="color-grid">
+      <div class="color-grid" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
         {% for c in colors %}
-        <button class="color-btn {% if loop.first %}active{% endif %}"
+        {% set color_in_stock = variant_data.get(c.name, {}).values()|selectattr('qty', 'gt', 0)|list|length > 0 %}
+        <button class="color-btn {% if loop.first %}active{% endif %} {% if not color_in_stock %}sold-out{% endif %}"
                 data-color="{{ c.name }}"
-                style="background:{{ c.hex }}"
-                title="{{ c.name }}"
-                onclick="document.getElementById('selected-color-label').textContent=this.dataset.color">
+                data-color-image="{{ color_images.get(c.name, '') }}"
+                style="background:{{ c.hex }};width:32px;height:32px;border-radius:50%;border:2px solid {% if loop.first %}#000{% else %}#ddd{% endif %};position:relative;cursor:pointer;"
+                title="{{ c.name }}{% if not color_in_stock %} — Sold Out{% endif %}"
+                onclick="selectColor(this)">
+          {% if not color_in_stock %}
+          <span style="position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,0.55);display:flex;align-items:center;justify-content:center;pointer-events:none;">
+            <svg width="20" height="20" viewBox="0 0 20 20"><line x1="3" y1="17" x2="17" y2="3" stroke="#888" stroke-width="1.5"/></svg>
+          </span>
+          {% endif %}
         </button>
         {% endfor %}
       </div>
@@ -74,40 +92,56 @@
     {% endif %}
 
     <!-- Size selector -->
-    {% set sizes = product.sizes %}
-    {% if sizes %}
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+    <div id="size-section">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;">
         <span class="selector-label">Size (UK)</span>
         <button type="button" onclick="document.getElementById('size-guide-modal').classList.add('open')"
                 style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;text-decoration:underline;background:none;border:none;cursor:pointer;">
           Size Guide
         </button>
       </div>
-      <div class="size-grid">
-        {% for size in sizes %}
-        <button class="size-btn" data-size="{{ size }}">{{ size }}</button>
+      <div class="size-grid" id="size-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+        {# Show all sizes across all variants initially #}
+        {% set all_sizes = [] %}
+        {% for v in product.variants %}
+          {% if v.size and v.size not in all_sizes %}{% set _ = all_sizes.append(v.size) %}{% endif %}
+        {% endfor %}
+        {% for size in all_sizes|sort %}
+        {% set in_stock_for_size = product.variants|selectattr('size','equalto',size)|selectattr('quantity','gt',0)|list|length > 0 %}
+        <button class="size-btn {% if not in_stock_for_size %}size-btn--sold-out{% endif %}"
+                data-size="{{ size }}"
+                style="min-width:44px;height:44px;border:1px solid {% if in_stock_for_size %}#ddd{% else %}#eee{% endif %};
+                       background:#fff;font-size:0.82rem;cursor:{% if in_stock_for_size %}pointer{% else %}not-allowed{% endif %};
+                       color:{% if in_stock_for_size %}#000{% else %}#ccc{% endif %};
+                       position:relative;{% if not in_stock_for_size %}text-decoration:line-through;{% endif %}"
+                {% if not in_stock_for_size %}disabled title="Sold out"{% endif %}
+                onclick="selectSize(this)">
+          {{ size }}
+        </button>
         {% endfor %}
       </div>
+      <p id="size-error" style="font-size:0.72rem;color:#c00;margin-top:6px;display:none;">Please select a size.</p>
     </div>
-    {% endif %}
 
     <!-- Qty + Add to cart -->
-    <div>
+    <div style="margin-top:20px;">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-        <button id="qty-minus" class="size-btn" style="font-size:1.2rem;">−</button>
+        <button id="qty-minus" class="size-btn" style="font-size:1.2rem;min-width:44px;height:44px;">−</button>
         <input id="qty-input" type="number" value="1" min="1"
                style="width:48px;height:44px;text-align:center;border:1px solid var(--grey-2);font-size:0.9rem;font-weight:600;"/>
-        <button id="qty-plus" class="size-btn" style="font-size:1.2rem;">+</button>
+        <button id="qty-plus" class="size-btn" style="font-size:1.2rem;min-width:44px;height:44px;">+</button>
+        <span id="stock-badge" style="font-size:0.68rem;color:#888;display:none;"></span>
       </div>
       <input type="hidden" id="selected-variant" value=""/>
       <input type="hidden" id="selected-color" value="{{ colors[0].name if colors else '' }}"/>
-      <button id="add-to-cart"
-              class="btn btn--black btn--full btn--lg"
+      <button id="add-to-cart" class="btn btn--black btn--full btn--lg"
               data-product-id="{{ product.id }}"
-              {% if not product.in_stock %}disabled{% endif %}>
-        {% if product.in_stock %}Add to Bag{% else %}Out of Stock{% endif %}
+              {% if not product.in_stock and not product.pre_order_enabled %}disabled{% endif %}>
+        {% if product.in_stock %}Add to Bag
+        {% elif product.pre_order_enabled %}Pre-Order Now
+        {% else %}Out of Stock{% endif %}
       </button>
+      <p id="variant-price-note" style="font-size:0.72rem;color:#888;margin-top:6px;display:none;"></p>
     </div>
 
     {% if review_stats.count %}
@@ -117,7 +151,21 @@
     </p>
     {% endif %}
 
-    {% if not product.in_stock %}
+    {# Pre-order panel — shown when product is fully out of stock and pre-order is enabled #}
+    {% if product.pre_order_enabled and not product.in_stock %}
+    <div style="margin-top:16px;padding:16px;border:1px solid #000;background:#fafafa;">
+      <p style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;margin-bottom:8px;">Pre-Order</p>
+      {% if product.pre_order_price %}
+      <p style="font-size:0.85rem;margin-bottom:6px;">
+        Pre-order price: <strong>{{ product.pre_order_price|currency }}</strong>
+        {% if product.pre_order_shipping_fee %} + {{ product.pre_order_shipping_fee|currency }} shipping{% endif %}
+      </p>
+      {% endif %}
+      {% if product.pre_order_notes %}
+      <p style="font-size:0.78rem;color:#555;line-height:1.6;">{{ product.pre_order_notes }}</p>
+      {% endif %}
+    </div>
+    {% elif not product.in_stock %}
     <div style="margin-top:16px;padding:14px;border:1px solid var(--grey-2);background:#fafafa;">
       <p style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;color:#c00;font-weight:600;">Out of Stock</p>
       <p style="font-size:0.78rem;color:#555;margin-bottom:10px;">Get notified when this is back:</p>
@@ -267,6 +315,168 @@
 {% endif %}
 
 <script>
+// Variant data from server
+var VARIANT_DATA = {{ variant_data|tojson }};
+var COLOR_IMAGES = {{ color_images|tojson }};
+var selectedColor = '{{ colors[0].name if colors else "" }}';
+var selectedSize = null;
+
+function selectColor(btn) {
+  document.querySelectorAll('.color-btn').forEach(function(b){
+    b.style.border = '2px solid #ddd';
+  });
+  btn.style.border = '2px solid #000';
+  selectedColor = btn.dataset.color;
+  document.getElementById('selected-color-label').textContent = selectedColor;
+  document.getElementById('selected-color').value = selectedColor;
+
+  // Swap gallery image if this color has its own photo
+  var img = btn.dataset.colorImage;
+  if (img) {
+    var main = document.getElementById('gallery-main');
+    if (main && main.tagName === 'IMG') {
+      main.src = img;
+    }
+  }
+
+  // Reset selected size and refresh size buttons
+  selectedSize = null;
+  document.getElementById('selected-variant').value = '';
+  refreshSizeGrid();
+  updateCartButton();
+}
+
+function refreshSizeGrid() {
+  var colorVariants = VARIANT_DATA[selectedColor] || {};
+  document.querySelectorAll('.size-btn').forEach(function(btn) {
+    var size = btn.dataset.size;
+    if (!size) return;
+    var info = colorVariants[size];
+    var inStock = info && info.qty > 0;
+    btn.disabled = !inStock;
+    btn.style.color = inStock ? '#000' : '#ccc';
+    btn.style.border = '1px solid ' + (inStock ? '#ddd' : '#eee');
+    btn.style.cursor = inStock ? 'pointer' : 'not-allowed';
+    btn.style.textDecoration = inStock ? 'none' : 'line-through';
+    btn.classList.toggle('size-btn--sold-out', !inStock);
+    if (btn.classList.contains('active')) {
+      btn.classList.remove('active');
+      btn.style.background = '#fff';
+    }
+  });
+}
+
+function selectSize(btn) {
+  if (btn.disabled) return;
+  document.querySelectorAll('.size-btn').forEach(function(b){
+    b.classList.remove('active');
+    b.style.background = '#fff';
+    b.style.color = b.disabled ? '#ccc' : '#000';
+    b.style.border = '1px solid ' + (b.disabled ? '#eee' : '#ddd');
+  });
+  btn.classList.add('active');
+  btn.style.background = '#000';
+  btn.style.color = '#fff';
+  btn.style.border = '1px solid #000';
+  selectedSize = btn.dataset.size;
+  document.getElementById('size-error').style.display = 'none';
+
+  // Fetch variant id + stock via API
+  var color = selectedColor;
+  var size = selectedSize;
+  fetch('/api/variant-stock?product_id={{ product.id }}&size='+encodeURIComponent(size)+'&color='+encodeURIComponent(color))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      document.getElementById('selected-variant').value = d.variant_id || '';
+      var badge = document.getElementById('stock-badge');
+      if (d.quantity > 0 && d.quantity <= 5) {
+        badge.textContent = 'Only ' + d.quantity + ' left';
+        badge.style.color = '#c00';
+        badge.style.display = 'inline';
+      } else {
+        badge.style.display = 'none';
+      }
+      // Show variant price if different
+      var note = document.getElementById('variant-price-note');
+      if (d.price && d.price !== parseFloat('{{ product.price }}')) {
+        note.textContent = 'Price for this variant: GH₵' + parseFloat(d.price).toFixed(2);
+        note.style.display = 'block';
+      } else {
+        note.style.display = 'none';
+      }
+      updateCartButton();
+    });
+}
+
+function updateCartButton() {
+  var btn = document.getElementById('add-to-cart');
+  var preOrderEnabled = {{ 'true' if product.pre_order_enabled else 'false' }};
+  var hasVariants = Object.keys(VARIANT_DATA).length > 0;
+  if (!hasVariants) {
+    // No variants at all
+    btn.disabled = false;
+    btn.textContent = 'Add to Bag';
+    return;
+  }
+  if (!selectedSize) {
+    btn.disabled = false;
+    btn.textContent = preOrderEnabled ? 'Pre-Order Now' : 'Add to Bag';
+    return;
+  }
+  var colorVariants = VARIANT_DATA[selectedColor] || {};
+  var info = colorVariants[selectedSize];
+  if (info && info.qty > 0) {
+    btn.disabled = false;
+    btn.textContent = 'Add to Bag';
+  } else if (preOrderEnabled) {
+    btn.disabled = false;
+    btn.textContent = 'Pre-Order Now';
+  } else {
+    btn.disabled = true;
+    btn.textContent = 'Sold Out';
+  }
+}
+
+// Add to cart handler
+document.getElementById('add-to-cart').addEventListener('click', function() {
+  var productId = this.dataset.productId;
+  var variantId = document.getElementById('selected-variant').value;
+  var qty = parseInt(document.getElementById('qty-input').value) || 1;
+  var hasVariants = Object.keys(VARIANT_DATA).length > 0;
+
+  if (hasVariants && !selectedSize) {
+    document.getElementById('size-error').style.display = 'block';
+    return;
+  }
+
+  fetch('/cart/add', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({product_id: productId, variant_id: variantId || null, quantity: qty}),
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      var badge = document.getElementById('cart-count');
+      if (badge) badge.textContent = d.cart_count;
+      // Brief button feedback
+      var btn = document.getElementById('add-to-cart');
+      var prev = btn.textContent;
+      btn.textContent = '✓ Added';
+      btn.style.background = '#059669';
+      setTimeout(function(){ btn.textContent = prev; btn.style.background = ''; }, 1500);
+    }
+  });
+});
+
+// Qty controls
+document.getElementById('qty-minus').addEventListener('click', function(){
+  var inp = document.getElementById('qty-input');
+  if (parseInt(inp.value) > 1) inp.value = parseInt(inp.value) - 1;
+});
+document.getElementById('qty-plus').addEventListener('click', function(){
+  var inp = document.getElementById('qty-input');
+  inp.value = parseInt(inp.value) + 1;
+});
+
 // Stock notification form
 (function() {
   var f = document.getElementById('stock-notify-form');

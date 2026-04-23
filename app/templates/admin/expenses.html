@@ -56,7 +56,7 @@
       <td style="color:#555;">{{ e.description or '—' }}</td>
       <td>
         <button class="btn btn--outline" style="padding:5px 10px;font-size:0.65rem;"
-                onclick='editExpense({{ e|tojson }})'>Edit</button>
+                onclick='editExpense({{ {"id": e.id, "category": e.category, "amount": e.amount|float, "expense_date": e.expense_date.strftime("%Y-%m-%d"), "description": e.description or ""}|tojson }})'>Edit</button>
         <form method="post" action="{{ url_for('admin.expenses_delete', eid=e.id) }}"
               style="display:inline;" onsubmit="return confirm('Delete expense?')">
           <button class="btn" style="padding:5px 10px;font-size:0.65rem;color:#dc2626;border:1px solid #dc2626;">Del</button>
@@ -101,8 +101,7 @@
       </div>
       <div class="admin-field">
         <label>Date *</label>
-        <input type="date" name="expense_date" id="e-date" required
-               value="{{ now.strftime('%Y-%m-%d') if now else '' }}"/>
+        <input type="date" name="expense_date" id="e-date" required/>
       </div>
       <div class="admin-field">
         <label>Description</label>

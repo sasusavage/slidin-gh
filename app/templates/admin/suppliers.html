@@ -24,7 +24,7 @@
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.address or '—' }}</td>
       <td>
         <button class="btn btn--outline" style="padding:5px 10px;font-size:0.65rem;"
-                onclick='editSupplier({{ s|tojson }})'>Edit</button>
+                onclick='editSupplier({{ {"id": s.id, "name": s.name, "contact_person": s.contact_person or "", "phone": s.phone or "", "email": s.email or "", "address": s.address or "", "notes": s.notes or ""}|tojson }})'>Edit</button>
         <form method="post" action="{{ url_for('admin.suppliers_delete', sid=s.id) }}"
               style="display:inline;" onsubmit="return confirm('Delete supplier?')">
           <button class="btn" style="padding:5px 10px;font-size:0.65rem;color:#dc2626;border:1px solid #dc2626;">Delete</button>

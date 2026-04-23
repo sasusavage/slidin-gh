@@ -132,8 +132,9 @@ def update_order_status(order_id):
         order.status = new_status
         db.session.commit()
         try:
-            from app.notifications import send_status_update
+            from app.notifications import send_status_update, telegram_order_status
             send_status_update(order)
+            telegram_order_status(order)
         except Exception:
             pass
     return redirect(url_for('admin.order_detail', order_id=order_id))
@@ -226,14 +227,23 @@ def _save_product(product, categories):
     product.status = request.form.get('status', 'active')
     product.featured = bool(request.form.get('featured'))
 
-    # Handle image uploads
+    # Pre-order settings
+    product.pre_order_enabled = bool(request.form.get('pre_order_enabled'))
+    po_price = request.form.get('pre_order_price', '').strip()
+    po_ship = request.form.get('pre_order_shipping_fee', '').strip()
+    product.pre_order_price = float(po_price) if po_price else None
+    product.pre_order_shipping_fee = float(po_ship) if po_ship else None
+    product.pre_order_notes = request.form.get('pre_order_notes', '').strip()
+
     upload_folder = current_app.config['UPLOAD_FOLDER']
+
+    # Main product images (with optional template tag)
     images = request.files.getlist('images')
+    templates = request.form.getlist('image_template[]')
     pos = product.images.count()
-    for f in images:
-        if f and allowed_file(f.filename):
+    for idx, f in enumerate(images):
+        if f and f.filename and allowed_file(f.filename):
             ext = f.filename.rsplit('.', 1)[1].lower()
-            # Size check for videos (stream to check without full read)
             if ext in ('mp4', 'mov', 'webm'):
                 f.seek(0, 2)
                 size = f.tell()
@@ -243,44 +253,78 @@ def _save_product(product, categories):
                     continue
             fname = f'{uuid.uuid4()}.{ext}'
             f.save(os.path.join(upload_folder, fname))
+            tpl = templates[idx] if idx < len(templates) else ''
             img = ProductImage(
                 product_id=product.id,
                 url=f'/static/uploads/{fname}',
                 position=pos,
+                image_template=tpl or None,
             )
             db.session.add(img)
             pos += 1
 
     db.session.flush()
 
-    # Variants: sizes × colors grid submitted as JSON-ish form fields
-    # Expects: variant_size[], variant_color[], variant_color_hex[], variant_qty[], variant_price[]
+    # Variants — full replacement approach:
+    # Posted fields: variant_id[], variant_size[], variant_color[], variant_color_hex[],
+    #                variant_qty[], variant_price[], variant_color_image[] (file)
+    v_ids = request.form.getlist('variant_id[]')
     sizes = request.form.getlist('variant_size[]')
     colors = request.form.getlist('variant_color[]')
     color_hexes = request.form.getlist('variant_color_hex[]')
     qtys = request.form.getlist('variant_qty[]')
     v_prices = request.form.getlist('variant_price[]')
+    color_images = request.files.getlist('variant_color_image[]')
+
+    # Track which variant IDs were submitted (to delete removed ones)
+    submitted_ids = set()
 
     for i, (size, color) in enumerate(zip(sizes, colors)):
         size = size.strip()
         color = color.strip()
         if not size and not color:
             continue
-        existing = ProductVariant.query.filter_by(
-            product_id=product.id, size=size, color=color).first()
-        if existing:
-            existing.quantity = int(qtys[i] or 0)
-            existing.price = float(v_prices[i]) if v_prices[i] else None
+
+        vid = v_ids[i].strip() if i < len(v_ids) else ''
+        qty = int(qtys[i] or 0) if i < len(qtys) else 0
+        vp = float(v_prices[i]) if i < len(v_prices) and v_prices[i] else None
+        hex_val = color_hexes[i] if i < len(color_hexes) else '#000000'
+
+        # Find or create variant
+        if vid:
+            variant = ProductVariant.query.get(vid)
+            if not variant or variant.product_id != product.id:
+                variant = None
         else:
-            v = ProductVariant(
-                product_id=product.id,
-                size=size,
-                color=color,
-                color_hex=color_hexes[i] if i < len(color_hexes) else None,
-                quantity=int(qtys[i] or 0),
-                price=float(v_prices[i]) if v_prices[i] else None,
-            )
-            db.session.add(v)
+            variant = ProductVariant.query.filter_by(
+                product_id=product.id, size=size, color=color).first()
+
+        if not variant:
+            variant = ProductVariant(product_id=product.id)
+            db.session.add(variant)
+
+        variant.size = size
+        variant.color = color
+        variant.color_hex = hex_val
+        variant.quantity = qty
+        variant.price = vp
+
+        # Per-color image upload
+        if i < len(color_images) and color_images[i] and color_images[i].filename and allowed_file(color_images[i].filename):
+            cf = color_images[i]
+            ext = cf.filename.rsplit('.', 1)[1].lower()
+            fname = f'variant_{uuid.uuid4()}.{ext}'
+            cf.save(os.path.join(upload_folder, fname))
+            variant.color_image = f'/static/uploads/{fname}'
+
+        db.session.flush()
+        submitted_ids.add(variant.id)
+
+    # Remove variants that were not submitted (deleted by user)
+    if not is_new:
+        for v in list(product.variants):
+            if v.id not in submitted_ids:
+                db.session.delete(v)
 
     db.session.commit()
     flash(f'Product {"created" if is_new else "updated"}.', 'success')
@@ -1215,10 +1259,12 @@ def api_ai_insights():
 @admin_required
 def api_ai_chat():
     from app.ai_engine import chat
-    msg = (request.json or {}).get('message', '').strip()
+    data = request.json or {}
+    msg = data.get('message', '').strip()
+    history = data.get('history', [])
     if not msg:
         return jsonify({'response': 'Please enter a message.'}), 400
-    reply = chat(current_app._get_current_object(), msg)
+    reply = chat(current_app._get_current_object(), msg, history=history)
     return jsonify({'response': reply})
 
 
@@ -1374,3 +1420,120 @@ def banners_toggle(banner_id):
     state = 'activated' if b.is_active else 'deactivated'
     flash(f'Banner {state}.', 'success')
     return redirect(url_for('admin.banners'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TELEGRAM BOT WEBHOOK  — admin can chat with AI via Telegram
+# ══════════════════════════════════════════════════════════════════════════════
+
+# In-memory conversation histories per Telegram chat_id (reset on restart)
+_tg_histories = {}
+
+@admin_bp.route('/telegram/webhook', methods=['POST'])
+def telegram_webhook():
+    """
+    Telegram bot webhook. Register with:
+      POST https://api.telegram.org/bot<TOKEN>/setWebhook
+      {"url": "https://yourdomain.com/admin/telegram/webhook"}
+    Only responds to messages from the configured TELEGRAM_CHAT_ID.
+    """
+    import os
+    data = request.get_json(silent=True) or {}
+    message = data.get('message') or data.get('edited_message') or {}
+    chat = message.get('chat', {})
+    chat_id = str(chat.get('id', ''))
+    text = (message.get('text') or '').strip()
+
+    allowed_chat = os.environ.get('TELEGRAM_CHAT_ID', '')
+    if not chat_id or not text or chat_id != allowed_chat:
+        return jsonify({'ok': True})
+
+    # Handle special commands
+    if text.startswith('/'):
+        cmd = text.split()[0].lower()
+        if cmd == '/start':
+            _reply_telegram(chat_id, '👋 Hi! I\'m your Slidein GH AI assistant.\n\nAsk me anything about your sales, stock, customers, or strategy. Type /stats for a quick snapshot or /report for today\'s full report.')
+            return jsonify({'ok': True})
+        if cmd == '/stats':
+            try:
+                from app.ai_engine import get_context
+                ctx = get_context(current_app._get_current_object())
+                msg = (
+                    f'📊 <b>Quick Stats — Slidein GH</b>\n'
+                    f'────────────────\n'
+                    f'📦 Today: {ctx["sales_today"]["count"]} orders · GH₵{ctx["sales_today"]["revenue"]:,.2f}\n'
+                    f'📈 7-Day: {ctx["sales_7d"]["count"]} orders · GH₵{ctx["sales_7d"]["revenue"]:,.2f}\n'
+                    f'💰 30-Day Revenue: GH₵{ctx["sales_30d"]["revenue"]:,.2f}\n'
+                    f'💸 30-Day Expenses: GH₵{ctx["expenses_30d"]:,.2f}\n'
+                    f'📉 Est. Profit: GH₵{ctx["profit_estimate_30d"]:,.2f}\n'
+                    f'👥 Customers: {ctx["total_customers"]} ({ctx["repeat_customers"]} repeat)\n'
+                    f'⚠️ Low stock: {ctx["low_stock_variants"]} variants · {ctx["out_of_stock_variants"]} out\n'
+                    f'🕐 Pending orders: {ctx["pending_orders"]}'
+                )
+                _reply_telegram(chat_id, msg)
+            except Exception as e:
+                _reply_telegram(chat_id, f'⚠️ Could not fetch stats: {e}')
+            return jsonify({'ok': True})
+        if cmd == '/report':
+            try:
+                from app.ai_engine import get_health_report
+                report = get_health_report(current_app._get_current_object())
+                _reply_telegram(chat_id, f'📋 <b>Daily Report</b>\n\n{report}')
+            except Exception as e:
+                _reply_telegram(chat_id, f'⚠️ Report unavailable: {e}')
+            return jsonify({'ok': True})
+        if cmd == '/clear':
+            _tg_histories.pop(chat_id, None)
+            _reply_telegram(chat_id, '🗑 Conversation cleared.')
+            return jsonify({'ok': True})
+
+    # AI chat
+    try:
+        from app.ai_engine import chat as ai_chat
+        history = _tg_histories.get(chat_id, [])
+        reply = ai_chat(current_app._get_current_object(), text, history=history)
+        history.append({'role': 'user', 'content': text})
+        history.append({'role': 'assistant', 'content': reply})
+        _tg_histories[chat_id] = history[-12:]  # keep last 6 exchanges
+        _reply_telegram(chat_id, reply)
+    except Exception as e:
+        _reply_telegram(chat_id, f'⚠️ AI error: {e}')
+
+    return jsonify({'ok': True})
+
+
+def _reply_telegram(chat_id, text):
+    import os
+    import requests as _req
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not token:
+        return
+    try:
+        _req.post(
+            f'https://api.telegram.org/bot{token}/sendMessage',
+            json={'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML'},
+            timeout=10,
+        )
+    except Exception:
+        pass
+
+
+@admin_bp.route('/telegram/setup')
+@admin_required
+def telegram_setup():
+    """One-click webhook registration helper."""
+    import os, requests as _req
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not token:
+        return jsonify({'error': 'TELEGRAM_BOT_TOKEN not set in .env'}), 400
+    host = request.host_url.rstrip('/')
+    webhook_url = f'{host}/admin/telegram/webhook'
+    try:
+        r = _req.post(
+            f'https://api.telegram.org/bot{token}/setWebhook',
+            json={'url': webhook_url, 'allowed_updates': ['message']},
+            timeout=10,
+        )
+        return jsonify(r.json())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

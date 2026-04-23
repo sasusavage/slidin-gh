@@ -2,195 +2,483 @@
 {% block title %}{{ 'Edit' if product else 'New' }} Product{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('admin.products') }}" style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.5;">← Products</a>
+<a href="{{ url_for('admin.products') }}"
+   style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.5;">← Products</a>
 <h1 class="admin-page-title" style="margin-top:16px;">
   {{ 'Edit — ' + product.name if product else 'New Product' }}
 </h1>
 
-<form method="post" enctype="multipart/form-data" style="max-width:800px;">
+<form method="post" enctype="multipart/form-data" id="product-form" style="max-width:900px;"
+      data-color-count="{{ product.variants.count() if product else 1 }}">
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-    <div>
-      <div class="admin-field">
-        <label>Product Name *</label>
-        <input type="text" name="name" required value="{{ product.name if product else '' }}"/>
+  <!-- ── Basic Info ──────────────────────────────────────────────────────── -->
+  <div style="background:#fff;border:1px solid #e0e0e0;padding:24px;margin-bottom:20px;">
+    <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:20px;">Basic Information</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div class="admin-field">
+          <label>Product Name *</label>
+          <input type="text" name="name" required value="{{ product.name if product else '' }}"/>
+        </div>
+        <div class="admin-field">
+          <label>Brand</label>
+          <input type="text" name="brand" value="{{ product.brand if product else '' }}" placeholder="e.g. Nike, Adidas"/>
+        </div>
+        <div class="admin-field">
+          <label>Category</label>
+          <select name="category_id">
+            <option value="">— None —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if product and product.category_id==cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="admin-field">
+            <label>Gender</label>
+            <select name="gender">
+              <option value="">— Any —</option>
+              {% for g in ['men','women','unisex'] %}
+              <option value="{{ g }}" {% if product and product.gender==g %}selected{% endif %}>{{ g.title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="admin-field">
+            <label>Status</label>
+            <select name="status">
+              {% for s in ['active','draft','archived'] %}
+              <option value="{{ s }}" {% if product and product.status==s %}selected{% elif not product and s=='active' %}selected{% endif %}>{{ s.title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+          <input type="checkbox" name="featured" id="featured" value="1"
+                 {% if product and product.featured %}checked{% endif %}/>
+          <label for="featured" style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Featured Product</label>
+        </div>
       </div>
-      <div class="admin-field">
-        <label>Price (GH₵) *</label>
-        <input type="number" name="price" step="0.01" min="0" required
-               value="{{ product.price if product else '' }}"/>
-      </div>
-      <div class="admin-field">
-        <label>Compare At Price (GH₵)</label>
-        <input type="number" name="compare_at_price" step="0.01" min="0"
-               value="{{ product.compare_at_price if product else '' }}"/>
-      </div>
-    </div>
-    <div>
-      <div class="admin-field">
-        <label>Category</label>
-        <select name="category_id">
-          <option value="">— None —</option>
-          {% for cat in categories %}
-          <option value="{{ cat.id }}" {% if product and product.category_id==cat.id %}selected{% endif %}>
-            {{ cat.name }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="admin-field">
-        <label>Gender</label>
-        <select name="gender">
-          <option value="">— Unspecified —</option>
-          {% for g in ['men','women','unisex'] %}
-          <option value="{{ g }}" {% if product and product.gender==g %}selected{% endif %}>{{ g.title() }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="admin-field">
-        <label>Brand</label>
-        <input type="text" name="brand" value="{{ product.brand if product else '' }}"/>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="admin-field">
+            <label>Price (GH₵) *</label>
+            <input type="number" name="price" step="0.01" min="0" required
+                   value="{{ product.price if product else '' }}"/>
+          </div>
+          <div class="admin-field">
+            <label>Compare Price (GH₵)</label>
+            <input type="number" name="compare_at_price" step="0.01" min="0"
+                   value="{{ product.compare_at_price if product else '' }}"
+                   placeholder="Crossed-out price"/>
+          </div>
+        </div>
+        <div class="admin-field">
+          <label>Description</label>
+          <textarea name="description" rows="7">{{ product.description if product else '' }}</textarea>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="admin-field">
-    <label>Description</label>
-    <textarea name="description" rows="4">{{ product.description if product else '' }}</textarea>
-  </div>
+  <!-- ── Images ─────────────────────────────────────────────────────────── -->
+  <div style="background:#fff;border:1px solid #e0e0e0;padding:24px;margin-bottom:20px;">
+    <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:20px;">Product Images</p>
 
-  <div style="display:flex;gap:24px;margin-bottom:24px;">
-    <div class="admin-field" style="margin:0;">
-      <label>Status</label>
-      <select name="status">
-        {% for s in ['active','draft','archived'] %}
-        <option value="{{ s }}" {% if product and product.status==s %}selected{% elif not product and s=='active' %}selected{% endif %}>{{ s.title() }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:24px;">
-      <input type="checkbox" name="featured" id="featured" value="1"
-             {% if product and product.featured %}checked{% endif %}/>
-      <label for="featured" style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Featured</label>
-    </div>
-  </div>
-
-  <!-- Images -->
-  {% if product and product.images.count() > 0 %}
-  <div class="admin-field">
-    <label>Current Images (Click 'Remove' to delete)</label>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
+    {% if product and product.images.count() > 0 %}
+    <p style="font-size:0.72rem;color:#555;margin-bottom:12px;">Current images — click Remove to delete:</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
       {% for img in product.images %}
-      <div id="img-{{ img.id }}" style="position:relative; width:120px; border:2px solid #ff0000; padding:10px; border-radius:8px; background:#fff; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      <div id="img-{{ img.id }}" style="position:relative;width:110px;text-align:center;">
         {% if img.url.endswith('.mp4') or img.url.endswith('.mov') or img.url.endswith('.webm') %}
-        <video src="{{ img.url }}" style="width:100px;height:100px;object-fit:cover;background:#000; border-radius:4px;" muted playsinline></video>
+        <video src="{{ img.url }}" style="width:110px;height:110px;object-fit:cover;border:1px solid #e0e0e0;" muted playsinline></video>
         {% else %}
-        <img src="{{ img.url }}" style="width:100px;height:100px;object-fit:cover;background:#f0f0f0; border-radius:4px;"/>
+        <img src="{{ img.url }}" style="width:110px;height:110px;object-fit:cover;border:1px solid #e0e0e0;display:block;"/>
         {% endif %}
-        <button type="button" onclick="removeProductImage('{{ product.id }}', '{{ img.id }}')" 
-                style="margin-top:10px; background:#ff0000; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-size:0.7rem; font-weight:bold; cursor:pointer; width:100%;">
+        {% if img.image_template %}
+        <span style="font-size:0.58rem;background:#000;color:#fff;padding:2px 5px;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.05em;">{{ img.image_template }}</span>
+        {% endif %}
+        <button type="button" onclick="removeImage('{{ product.id }}','{{ img.id }}')"
+                style="width:100%;margin-top:4px;background:#dc2626;color:#fff;border:none;padding:5px;font-size:0.65rem;cursor:pointer;font-weight:700;">
           REMOVE
         </button>
       </div>
       {% endfor %}
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <div class="admin-field">
-    <label>Upload Images / Videos (JPG, PNG, WEBP, MP4, MOV — max 100 MB per video)</label>
-    <input type="file" name="images" multiple accept="image/*,video/mp4,video/quicktime,video/webm"/>
+    <!-- Upload new images -->
+    <div id="upload-area" style="border:2px dashed #e0e0e0;padding:24px;text-align:center;cursor:pointer;margin-bottom:16px;"
+         onclick="document.getElementById('img-file-input').click()">
+      <p style="font-size:0.78rem;color:#888;margin-bottom:4px;">Click to select images / videos</p>
+      <p style="font-size:0.65rem;color:#bbb;">JPG, PNG, WEBP, AVIF, MP4, MOV — max 100 MB per video</p>
+    </div>
+    <input type="file" id="img-file-input" name="images" multiple accept="image/*,video/mp4,video/quicktime,video/webm"
+           style="display:none;" onchange="previewImages(this)"/>
+
+    <!-- Preview + template picker -->
+    <div id="image-preview-list" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;"></div>
   </div>
 
-  <!-- Variants -->
-  <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--black);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Variants (Size × Color × Stock)</p>
-      <button type="button" onclick="addVariantRow()" class="btn btn--outline" style="padding:6px 14px;font-size:0.65rem;">+ Add Row</button>
+  <!-- ── Colors & Variants ───────────────────────────────────────────────── -->
+  <div style="background:#fff;border:1px solid #e0e0e0;padding:24px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
+      <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin:0;">Colors &amp; Sizes</p>
+      <button type="button" onclick="addColorBlock()" class="btn btn--outline" style="padding:6px 14px;font-size:0.65rem;">+ Add Color</button>
     </div>
 
-    <table style="width:100%;border-collapse:collapse;" id="variants-table">
-      <thead>
-        <tr>
-          {% for h in ['Size (UK)','Color Name','Hex Color','Stock Qty','Price (optional)'] %}
-          <th style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--grey-3);padding:8px 10px;text-align:left;border-bottom:1px solid var(--black);">{{ h }}</th>
-          {% endfor %}
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="variants-body">
-        {% if product %}
-          {% for v in product.variants %}
-          <tr>
-            <td style="padding:4px 6px;"><input type="text" name="variant_size[]" value="{{ v.size or '' }}" placeholder="9"/></td>
-            <td style="padding:4px 6px;"><input type="text" name="variant_color[]" value="{{ v.color or '' }}" placeholder="Black"/></td>
-            <td style="padding:4px 6px;"><input type="color" name="variant_color_hex[]" value="{{ v.color_hex or '#000000' }}" style="width:48px;height:36px;border:none;cursor:pointer;"/></td>
-            <td style="padding:4px 6px;"><input type="number" name="variant_qty[]" value="{{ v.quantity }}" min="0" style="width:80px;"/></td>
-            <td style="padding:4px 6px;"><input type="number" name="variant_price[]" value="{{ v.price or '' }}" step="0.01" min="0" placeholder="Same as base"/></td>
-            <td><button type="button" onclick="this.closest('tr').remove()" style="color:var(--grey-3);font-size:1.2rem;padding:4px 8px;">×</button></td>
-          </tr>
-          {% endfor %}
-        {% else %}
-          <!-- Default blank rows -->
-          {% for _ in range(3) %}
-          <tr>
-            <td style="padding:4px 6px;"><input type="text" name="variant_size[]" placeholder="e.g. 9"/></td>
-            <td style="padding:4px 6px;"><input type="text" name="variant_color[]" placeholder="e.g. Black"/></td>
-            <td style="padding:4px 6px;"><input type="color" name="variant_color_hex[]" value="#000000" style="width:48px;height:36px;border:none;cursor:pointer;"/></td>
-            <td style="padding:4px 6px;"><input type="number" name="variant_qty[]" value="0" min="0" style="width:80px;"/></td>
-            <td style="padding:4px 6px;"><input type="number" name="variant_price[]" step="0.01" min="0" placeholder="Same as base"/></td>
-            <td><button type="button" onclick="this.closest('tr').remove()" style="color:var(--grey-3);font-size:1.2rem;padding:4px 8px;">×</button></td>
-          </tr>
-          {% endfor %}
-        {% endif %}
-      </tbody>
-    </table>
+    <p style="font-size:0.72rem;color:#888;margin-bottom:16px;">
+      For each color, upload a photo, set the hex, then add all available sizes with their stock quantities.
+    </p>
+
+    <div id="color-blocks">
+      {% if product and product.variants.count() > 0 %}
+        {# Group variants by color #}
+        {% set ns = namespace(seen=[]) %}
+        {% for v in product.variants %}
+          {% if v.color not in ns.seen %}
+            {% set ns.seen = ns.seen + [v.color] %}
+            <div class="color-block" data-color="{{ v.color or '' }}" style="border:1px solid #e0e0e0;padding:20px;margin-bottom:16px;border-radius:2px;">
+              <div style="display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin-bottom:16px;">
+                <div style="text-align:center;">
+                  {% if v.color_image %}
+                  <img src="{{ v.color_image }}" id="color-thumb-{{ loop.index }}"
+                       style="width:64px;height:64px;object-fit:cover;border:1px solid #e0e0e0;display:block;margin-bottom:4px;"/>
+                  {% else %}
+                  <div id="color-thumb-{{ loop.index }}"
+                       style="width:64px;height:64px;background:#f5f5f5;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#aaa;text-align:center;margin-bottom:4px;">
+                    Photo
+                  </div>
+                  {% endif %}
+                  <label style="font-size:0.6rem;color:#888;cursor:pointer;text-decoration:underline;">
+                    Upload
+                    <input type="file" name="variant_color_image[]" accept="image/*"
+                           style="display:none;" onchange="previewColorImg(this, 'color-thumb-{{ loop.index }}')"/>
+                  </label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+                  <div>
+                    <label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:4px;">Color Name</label>
+                    <input type="text" name="variant_color_name[]" value="{{ v.color or '' }}"
+                           style="width:100%;padding:8px;border:1px solid #e0e0e0;font-size:0.82rem;"
+                           placeholder="e.g. Midnight Black"/>
+                  </div>
+                  <div>
+                    <label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:4px;">Hex</label>
+                    <input type="color" name="variant_color_hex_group[]" value="{{ v.color_hex or '#000000' }}"
+                           style="width:48px;height:38px;border:none;cursor:pointer;"/>
+                  </div>
+                </div>
+                <button type="button" onclick="removeColorBlock(this)"
+                        style="background:none;border:none;color:#dc2626;font-size:1.4rem;cursor:pointer;padding:4px;">×</button>
+              </div>
+
+              <!-- Sizes for this color -->
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;">Sizes &amp; Stock</label>
+                  <button type="button" onclick="addSizeRow(this)" style="font-size:0.65rem;color:#000;background:none;border:1px solid #000;padding:3px 10px;cursor:pointer;">+ Size</button>
+                </div>
+                <div class="size-rows">
+                  {% for sv in product.variants %}
+                    {% if sv.color == v.color %}
+                    <div class="size-row" style="display:grid;grid-template-columns:auto 80px 110px 100px auto;gap:8px;align-items:center;margin-bottom:8px;">
+                      <input type="hidden" name="variant_id[]" value="{{ sv.id }}"/>
+                      <input type="hidden" name="variant_color[]" value="{{ sv.color or '' }}"/>
+                      <input type="hidden" name="variant_color_hex[]" value="{{ sv.color_hex or '#000000' }}"/>
+                      <span style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;white-space:nowrap;">Size (UK)</span>
+                      <input type="text" name="variant_size[]" value="{{ sv.size or '' }}" placeholder="e.g. 9"
+                             style="padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;"/>
+                      <div>
+                        <span style="font-size:0.6rem;color:#aaa;display:block;margin-bottom:2px;">Stock Qty</span>
+                        <input type="number" name="variant_qty[]" value="{{ sv.quantity }}" min="0"
+                               style="width:100%;padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;"/>
+                      </div>
+                      <div>
+                        <span style="font-size:0.6rem;color:#aaa;display:block;margin-bottom:2px;">Price (opt.)</span>
+                        <input type="number" name="variant_price[]" value="{{ sv.price or '' }}" step="0.01" min="0"
+                               style="width:100%;padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;" placeholder="Base"/>
+                      </div>
+                      <button type="button" onclick="this.closest('.size-row').remove()"
+                              style="background:none;border:none;color:#dc2626;font-size:1.2rem;cursor:pointer;">×</button>
+                    </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <!-- Default empty color block for new products -->
+        <div class="color-block" style="border:1px solid #e0e0e0;padding:20px;margin-bottom:16px;border-radius:2px;">
+          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin-bottom:16px;">
+            <div style="text-align:center;">
+              <div id="color-thumb-1" style="width:64px;height:64px;background:#f5f5f5;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#aaa;text-align:center;margin-bottom:4px;">Photo</div>
+              <label style="font-size:0.6rem;color:#888;cursor:pointer;text-decoration:underline;">
+                Upload
+                <input type="file" name="variant_color_image[]" accept="image/*" style="display:none;"
+                       onchange="previewColorImg(this,'color-thumb-1')"/>
+              </label>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+              <div>
+                <label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:4px;">Color Name</label>
+                <input type="text" name="variant_color_name[]" style="width:100%;padding:8px;border:1px solid #e0e0e0;font-size:0.82rem;" placeholder="e.g. Triple White"/>
+              </div>
+              <div>
+                <label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:4px;">Hex</label>
+                <input type="color" name="variant_color_hex_group[]" value="#000000" style="width:48px;height:38px;border:none;cursor:pointer;"/>
+              </div>
+            </div>
+            <button type="button" onclick="removeColorBlock(this)"
+                    style="background:none;border:none;color:#dc2626;font-size:1.4rem;cursor:pointer;padding:4px;">×</button>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;">Sizes &amp; Stock</label>
+              <button type="button" onclick="addSizeRow(this)" style="font-size:0.65rem;color:#000;background:none;border:1px solid #000;padding:3px 10px;cursor:pointer;">+ Size</button>
+            </div>
+            <div class="size-rows">
+              {% for default_size in ['7','8','9','10','11'] %}
+              <div class="size-row" style="display:grid;grid-template-columns:auto 80px 110px 100px auto;gap:8px;align-items:center;margin-bottom:8px;">
+                <input type="hidden" name="variant_id[]" value=""/>
+                <input type="hidden" name="variant_color[]" value=""/>
+                <input type="hidden" name="variant_color_hex[]" value="#000000"/>
+                <span style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;white-space:nowrap;">Size (UK)</span>
+                <input type="text" name="variant_size[]" value="{{ default_size }}" style="padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;"/>
+                <div>
+                  <span style="font-size:0.6rem;color:#aaa;display:block;margin-bottom:2px;">Stock Qty</span>
+                  <input type="number" name="variant_qty[]" value="0" min="0" style="width:100%;padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;"/>
+                </div>
+                <div>
+                  <span style="font-size:0.6rem;color:#aaa;display:block;margin-bottom:2px;">Price (opt.)</span>
+                  <input type="number" name="variant_price[]" step="0.01" min="0" style="width:100%;padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;" placeholder="Base"/>
+                </div>
+                <button type="button" onclick="this.closest('.size-row').remove()" style="background:none;border:none;color:#dc2626;font-size:1.2rem;cursor:pointer;">×</button>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div style="background:#f9f9f9;border:1px dashed #e0e0e0;padding:12px;font-size:0.72rem;color:#888;margin-top:8px;">
+      💡 Each color gets its own photo. Sizes with 0 stock will show as sold out. Remove a size row to delete that variant.
+    </div>
   </div>
 
-  <div style="margin-top:32px;display:flex;gap:12px;">
+  <!-- ── Pre-Order ───────────────────────────────────────────────────────── -->
+  <div style="background:#fff;border:1px solid #e0e0e0;padding:24px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <input type="checkbox" name="pre_order_enabled" id="pre_order_enabled" value="1"
+             {% if product and product.pre_order_enabled %}checked{% endif %}
+             onchange="document.getElementById('preorder-fields').style.display=this.checked?'block':'none'"/>
+      <label for="pre_order_enabled" style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">
+        Enable Pre-Order (shown when fully out of stock)
+      </label>
+    </div>
+    <div id="preorder-fields" data-show="{{ '1' if product and product.pre_order_enabled else '0' }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+        <div class="admin-field">
+          <label>Pre-Order Price (GH₵)</label>
+          <input type="number" name="pre_order_price" step="0.01" min="0"
+                 value="{{ product.pre_order_price if product and product.pre_order_price else '' }}"
+                 placeholder="Leave blank to use base price"/>
+        </div>
+        <div class="admin-field">
+          <label>Pre-Order Shipping Fee (GH₵)</label>
+          <input type="number" name="pre_order_shipping_fee" step="0.01" min="0"
+                 value="{{ product.pre_order_shipping_fee if product and product.pre_order_shipping_fee else '' }}"
+                 placeholder="e.g. 50"/>
+        </div>
+      </div>
+      <div class="admin-field">
+        <label>Pre-Order Notes (shown to customer)</label>
+        <textarea name="pre_order_notes" rows="2" placeholder="e.g. Ships in 3–4 weeks. Full payment required.">{{ product.pre_order_notes if product else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Actions ────────────────────────────────────────────────────────── -->
+  <div style="display:flex;gap:12px;">
     <button type="submit" class="btn btn--black btn--lg">
       {{ 'Save Changes' if product else 'Create Product' }}
     </button>
     <a href="{{ url_for('admin.products') }}" class="btn btn--outline btn--lg">Cancel</a>
   </div>
+
 </form>
 
 <script>
-function addVariantRow() {
-  const tbody = document.getElementById('variants-body');
-  const row = document.createElement('tr');
-  row.innerHTML = `
-    <td style="padding:4px 6px;"><input type="text" name="variant_size[]" placeholder="e.g. 9"/></td>
-    <td style="padding:4px 6px;"><input type="text" name="variant_color[]" placeholder="e.g. Black"/></td>
-    <td style="padding:4px 6px;"><input type="color" name="variant_color_hex[]" value="#000000" style="width:48px;height:36px;border:none;cursor:pointer;"/></td>
-    <td style="padding:4px 6px;"><input type="number" name="variant_qty[]" value="0" min="0" style="width:80px;"/></td>
-    <td style="padding:4px 6px;"><input type="number" name="variant_price[]" step="0.01" min="0" placeholder="Same as base"/></td>
-    <td><button type="button" onclick="this.closest('tr').remove()" style="color:var(--grey-3);font-size:1.2rem;padding:4px 8px;">×</button></td>
-  `;
-  tbody.appendChild(row);
-  row.querySelector('input').focus();
+var colorBlockCount = parseInt(document.getElementById('product-form').dataset.colorCount || '1', 10);
+
+// Initialise pre-order section visibility from data attribute
+(function(){
+  var pf = document.getElementById('preorder-fields');
+  pf.style.display = pf.dataset.show === '1' ? 'block' : 'none';
+})();
+
+// ── Image upload & template preview ──────────────────────────────────────
+var IMAGE_TEMPLATES = [
+  {val:'', label:'Original (no template)'},
+  {val:'white_bg', label:'White Background'},
+  {val:'shadow', label:'Drop Shadow'},
+  {val:'studio', label:'Studio Light'},
+  {val:'gradient', label:'Gradient'},
+];
+
+function previewImages(input){
+  var list = document.getElementById('image-preview-list');
+  // Don't duplicate entries — rebuild from FileList
+  var existing = list.querySelectorAll('.img-preview-item');
+  // only append new ones
+  var files = input.files;
+  for(var i=0;i<files.length;i++){
+    (function(file, idx){
+      var wrap = document.createElement('div');
+      wrap.className = 'img-preview-item';
+      wrap.style.cssText = 'width:120px;text-align:center;';
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var isVideo = file.type.startsWith('video');
+        if(isVideo){
+          var vid = document.createElement('video');
+          vid.src = e.target.result;
+          vid.style.cssText = 'width:120px;height:100px;object-fit:cover;border:1px solid #e0e0e0;display:block;';
+          vid.muted = true;
+          wrap.appendChild(vid);
+        } else {
+          var img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.cssText = 'width:120px;height:100px;object-fit:cover;border:1px solid #e0e0e0;display:block;';
+          wrap.appendChild(img);
+        }
+        // Template selector
+        var sel = document.createElement('select');
+        sel.name = 'image_template[]';
+        sel.style.cssText = 'width:120px;font-size:0.65rem;padding:4px;border:1px solid #e0e0e0;margin-top:4px;';
+        IMAGE_TEMPLATES.forEach(function(t){
+          var opt = document.createElement('option');
+          opt.value = t.val;
+          opt.textContent = t.label;
+          sel.appendChild(opt);
+        });
+        wrap.appendChild(sel);
+        // Label
+        var lbl = document.createElement('p');
+        lbl.textContent = file.name.length > 15 ? file.name.substring(0,12)+'…' : file.name;
+        lbl.style.cssText = 'font-size:0.6rem;color:#aaa;margin-top:3px;';
+        wrap.appendChild(lbl);
+        list.appendChild(wrap);
+      };
+      reader.readAsDataURL(file);
+    })(files[i], i);
+  }
+  document.getElementById('upload-area').style.borderColor = '#000';
 }
 
-function removeProductImage(productId, imageId) {
-  if (!confirm('Are you sure you want to remove this image?')) return;
-  
-  fetch(`/admin/products/${productId}/image/${imageId}/delete`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      const el = document.getElementById(`img-${imageId}`);
-      if (el) el.remove();
-    } else {
-      alert('Error removing image.');
-    }
-  })
-  .catch(err => {
-    console.error(err);
-    alert('Something went wrong.');
+// ── Color block management ────────────────────────────────────────────────
+function addColorBlock(){
+  colorBlockCount++;
+  var idx = colorBlockCount;
+  var div = document.createElement('div');
+  div.className = 'color-block';
+  div.style.cssText = 'border:1px solid #e0e0e0;padding:20px;margin-bottom:16px;border-radius:2px;';
+  div.innerHTML =
+    '<div style="display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin-bottom:16px;">'
+    +'<div style="text-align:center;">'
+    +'<div id="color-thumb-'+idx+'" style="width:64px;height:64px;background:#f5f5f5;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#aaa;text-align:center;margin-bottom:4px;">Photo</div>'
+    +'<label style="font-size:0.6rem;color:#888;cursor:pointer;text-decoration:underline;">Upload'
+    +'<input type="file" name="variant_color_image[]" accept="image/*" style="display:none;" onchange="previewColorImg(this,\'color-thumb-'+idx+'\')" />'
+    +'</label></div>'
+    +'<div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">'
+    +'<div><label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:4px;">Color Name</label>'
+    +'<input type="text" name="variant_color_name[]" style="width:100%;padding:8px;border:1px solid #e0e0e0;font-size:0.82rem;" placeholder="e.g. Triple White"/></div>'
+    +'<div><label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:4px;">Hex</label>'
+    +'<input type="color" name="variant_color_hex_group[]" value="#000000" style="width:48px;height:38px;border:none;cursor:pointer;"/></div>'
+    +'</div>'
+    +'<button type="button" onclick="removeColorBlock(this)" style="background:none;border:none;color:#dc2626;font-size:1.4rem;cursor:pointer;padding:4px;">×</button>'
+    +'</div>'
+    +'<div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    +'<label style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;">Sizes & Stock</label>'
+    +'<button type="button" onclick="addSizeRow(this)" style="font-size:0.65rem;color:#000;background:none;border:1px solid #000;padding:3px 10px;cursor:pointer;">+ Size</button>'
+    +'</div>'
+    +'<div class="size-rows"></div>'
+    +'</div>';
+  document.getElementById('color-blocks').appendChild(div);
+  // Auto-add a first size row
+  addSizeRow(div.querySelector('[onclick="addSizeRow(this)"]'));
+}
+
+function removeColorBlock(btn){
+  var block = btn.closest('.color-block');
+  if(document.querySelectorAll('.color-block').length <= 1){
+    alert('A product needs at least one color/variant.');
+    return;
+  }
+  block.remove();
+}
+
+function addSizeRow(btn){
+  var sizeRows = btn.closest('div').nextElementSibling; // .size-rows
+  // find the color name and hex within this block
+  var block = btn.closest('.color-block');
+  var colorInput = block.querySelector('[name="variant_color_name[]"]');
+  var hexInput = block.querySelector('[name="variant_color_hex_group[]"]');
+  var row = document.createElement('div');
+  row.className = 'size-row';
+  row.style.cssText = 'display:grid;grid-template-columns:auto 80px 110px 100px auto;gap:8px;align-items:center;margin-bottom:8px;';
+  row.innerHTML =
+    '<input type="hidden" name="variant_id[]" value=""/>'
+    +'<input type="hidden" name="variant_color[]" value=""/>'
+    +'<input type="hidden" name="variant_color_hex[]" value="#000000"/>'
+    +'<span style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#aaa;white-space:nowrap;">Size (UK)</span>'
+    +'<input type="text" name="variant_size[]" placeholder="e.g. 9" style="padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;"/>'
+    +'<div><span style="font-size:0.6rem;color:#aaa;display:block;margin-bottom:2px;">Stock Qty</span>'
+    +'<input type="number" name="variant_qty[]" value="0" min="0" style="width:100%;padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;"/></div>'
+    +'<div><span style="font-size:0.6rem;color:#aaa;display:block;margin-bottom:2px;">Price (opt.)</span>'
+    +'<input type="number" name="variant_price[]" step="0.01" min="0" style="width:100%;padding:7px;border:1px solid #e0e0e0;font-size:0.82rem;" placeholder="Base"/></div>'
+    +'<button type="button" onclick="this.closest(\'.size-row\').remove()" style="background:none;border:none;color:#dc2626;font-size:1.2rem;cursor:pointer;">×</button>';
+  sizeRows.appendChild(row);
+  row.querySelector('input[name="variant_size[]"]').focus();
+}
+
+// Before submit: copy color name and hex into each size row's hidden fields
+document.getElementById('product-form').addEventListener('submit', function(){
+  document.querySelectorAll('.color-block').forEach(function(block){
+    var colorName = (block.querySelector('[name="variant_color_name[]"]').value || '').trim();
+    var hexVal = block.querySelector('[name="variant_color_hex_group[]"]').value || '#000000';
+    block.querySelectorAll('.size-row').forEach(function(row){
+      row.querySelector('[name="variant_color[]"]').value = colorName;
+      row.querySelector('[name="variant_color_hex[]"]').value = hexVal;
+    });
   });
+});
+
+function previewColorImg(input, thumbId){
+  var thumb = document.getElementById(thumbId);
+  if(!thumb || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    thumb.innerHTML = '';
+    thumb.style.background = '';
+    var img = document.createElement('img');
+    img.src = e.target.result;
+    img.style.cssText = 'width:64px;height:64px;object-fit:cover;';
+    thumb.appendChild(img);
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function removeImage(productId, imageId){
+  if(!confirm('Remove this image?')) return;
+  fetch('/admin/products/'+productId+'/image/'+imageId+'/delete',{method:'POST'})
+    .then(r=>r.json()).then(function(d){
+      if(d.success){ var el=document.getElementById('img-'+imageId); if(el) el.remove(); }
+      else alert('Could not remove image.');
+    });
 }
 </script>
 {% endblock %}
