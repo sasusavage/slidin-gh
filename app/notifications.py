@@ -196,6 +196,8 @@ def schedule_sms(phone, message, schedule_time, order_id=None):
 def _send_via_vynfy(phone, message):
     key = os.environ.get('VYNFY_API_KEY')
     sender = os.environ.get('VYNFY_SENDER_ID', 'SlideinGH')[:11]
+    base_url = os.environ.get('VYNFY_API_URL', 'https://sms.vynfy.com').rstrip('/')
+    
     if not key:
         raise ValueError('VYNFY_API_KEY not set')
     
@@ -206,7 +208,7 @@ def _send_via_vynfy(phone, message):
     elif not clean_phone.startswith('233'):
         clean_phone = '233' + clean_phone
 
-    url = "https://sms.vynfy.com/api/v1/send"
+    url = f"{base_url}/api/v1/send"
     headers = {
         "X-API-Key": key,
         "Content-Type": "application/json"
@@ -225,6 +227,8 @@ def _send_via_vynfy(phone, message):
 def _send_scheduled_vynfy(phone, message, schedule_time):
     key = os.environ.get('VYNFY_API_KEY')
     sender = os.environ.get('VYNFY_SENDER_ID', 'SlideinGH')[:11]
+    base_url = os.environ.get('VYNFY_API_URL', 'https://sms.vynfy.com').rstrip('/')
+    
     if not key:
         raise ValueError('VYNFY_API_KEY not set')
     
@@ -234,7 +238,7 @@ def _send_scheduled_vynfy(phone, message, schedule_time):
     elif not clean_phone.startswith('233'):
         clean_phone = '233' + clean_phone
 
-    url = "https://sms.vynfy.com/schedule/v1/send"
+    url = f"{base_url}/schedule/v1/send"
     headers = {
         "X-API-Key": key,
         "Content-Type": "application/json"
