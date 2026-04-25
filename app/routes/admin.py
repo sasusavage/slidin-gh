@@ -1599,7 +1599,9 @@ def api_ai_generate_description():
             + ". Target Ghanaian sneaker enthusiasts. Focus on style, comfort, and exclusivity. "
             "Keep it punchy and exciting. Do not include price."
         )
-        client = ai_engine._groq_client()
+        client, _ = ai_engine._groq_client()
+        if not client:
+            return jsonify({'error': 'AI not configured. Add GROQ_API_KEY to .env'}), 400
         resp = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             messages=[{'role': 'user', 'content': prompt}],
