@@ -1,62 +1,174 @@
 {% extends 'admin/base.html' %}
-{% block title %}Notifications Log{% endblock %}
+{% block title %}Communications Center{% endblock %}
 
 {% block content %}
-<h1 style="font-size:1.5rem;font-weight:700;margin-bottom:8px;">Notifications Log</h1>
-<p style="font-size:0.75rem;color:#888;margin-bottom:24px;">
-  Every SMS and email the system has queued. Status <strong>logged</strong> means no provider is wired yet —
-  set <code>SMS_PROVIDER</code> env var and implement the provider in <code>app/notifications.py</code>.
-</p>
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
+  <div>
+    <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:4px;">Communications Center</h1>
+    <p style="font-size:0.85rem;color:#666;">Manage SMS alerts, marketing campaigns, and delivery logs.</p>
+  </div>
+  <div style="display:flex; gap:12px;">
+    <button onclick="document.getElementById('bulkModal').style.display='flex'" class="btn btn--secondary" style="font-size:0.85rem; padding:10px 18px;">
+      <i class="ri-megaphone-line"></i> Bulk Marketing
+    </button>
+    <button onclick="document.getElementById('smsModal').style.display='flex'" class="btn btn--primary" style="font-size:0.85rem; padding:10px 18px;">
+      <i class="ri-chat-1-line"></i> Send New SMS
+    </button>
+  </div>
+</div>
 
-<div class="filter-bar" style="margin-bottom:16px;gap:8px;flex-wrap:wrap;">
-  {% for s in ['all','logged','sent','failed'] %}
+<div class="filter-bar" style="margin-bottom:20px; gap:8px; display:flex; flex-wrap:wrap; align-items:center; background:#f8f9fa; padding:12px; border-radius:8px;">
+  <span style="font-size:0.8rem; font-weight:600; color:#444; margin-right:8px;">STATUS:</span>
+  {% for s in ['all','sent','failed','queued','scheduled'] %}
   <a href="?status={{ s }}&channel={{ current_channel }}"
-     class="filter-chip {% if current_status==s %}active{% endif %}">
+     class="filter-chip {% if current_status==s %}active{% endif %}" style="text-transform:capitalize;">
     {{ s }} ({{ counts[s] if s in counts else 0 }})
   </a>
   {% endfor %}
-  <span style="margin-left:12px;color:#ccc;">|</span>
+  <span style="margin-left:12px; color:#ddd;">|</span>
+  <span style="font-size:0.8rem; font-weight:600; color:#444; margin:0 8px;">CHANNEL:</span>
   {% for c in ['all','sms','email'] %}
   <a href="?status={{ current_status }}&channel={{ c }}"
-     class="filter-chip {% if current_channel==c %}active{% endif %}">{{ c }}</a>
+     class="filter-chip {% if current_channel==c %}active{% endif %}" style="text-transform:uppercase;">{{ c }}</a>
   {% endfor %}
 </div>
 
-<div style="overflow-x:auto;">
-<table class="admin-table">
-  <thead><tr>
-    <th>When</th><th>Channel</th><th>Recipient</th>
-    <th>Subject / Preview</th><th>Status</th><th>Provider</th>
-  </tr></thead>
-  <tbody>
-  {% for n in pagination.items %}
-  <tr>
-    <td style="white-space:nowrap;">{{ n.created_at.strftime('%b %d, %H:%M') }}</td>
-    <td>{{ n.channel }}</td>
-    <td>{{ n.recipient }}</td>
-    <td>
-      {% if n.subject %}<strong>{{ n.subject }}</strong><br/>{% endif %}
-      <span style="color:#666;font-size:0.78rem;">{{ n.message[:120] }}{% if n.message|length > 120 %}…{% endif %}</span>
-    </td>
-    <td>
-      <span class="badge badge--{{ n.status }}" style="font-size:0.62rem;padding:3px 8px;background:{% if n.status=='sent' %}#d4edda{% elif n.status=='failed' %}#f8d7da{% else %}#e9ecef{% endif %};">
-        {{ n.status }}
-      </span>
-    </td>
-    <td>{{ n.provider or '—' }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="6" style="text-align:center;color:#aaa;padding:32px;">No notifications yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<div style="background:white; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.05); overflow:hidden;">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Recipient</th>
+        <th>Message Content</th>
+        <th>Status</th>
+        <th>Provider</th>
+        <th>Sent At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in pagination.items %}
+      <tr style="border-bottom:1px solid #f1f1f1;">
+        <td style="padding:16px;">
+          <div style="font-weight:600; color:#111;">{{ n.recipient }}</div>
+          <div style="font-size:0.75rem; color:#888; text-transform:uppercase;">{{ n.channel }}</div>
+        </td>
+        <td style="padding:16px;">
+          {% if n.subject %}<div style="font-weight:700; font-size:0.85rem; margin-bottom:2px;">{{ n.subject }}</div>{% endif %}
+          <div style="color:#555; font-size:0.85rem; max-width:400px; line-height:1.4;">{{ n.message }}</div>
+          {% if n.error %}
+          <div style="color:#dc3545; font-size:0.75rem; margin-top:6px; font-weight:500;">⚠️ {{ n.error }}</div>
+          {% endif %}
+        </td>
+        <td style="padding:16px;">
+          <span style="display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; 
+            {% if n.status == 'sent' or n.status == 'delivered' %} background:#e6f4ea; color:#1e7e34;
+            {% elif n.status == 'failed' %} background:#fce8e6; color:#d93025;
+            {% elif n.status == 'scheduled' %} background:#e8f0fe; color:#1967d2;
+            {% else %} background:#f1f3f4; color:#5f6368; {% endif %}">
+            {{ n.status|upper }}
+          </span>
+        </td>
+        <td style="padding:16px; color:#666; font-size:0.85rem;">{{ n.provider or '—' }}</td>
+        <td style="padding:16px; color:#888; font-size:0.85rem; white-space:nowrap;">{{ n.created_at.strftime('%b %d, %Y') }}<br/>{{ n.created_at.strftime('%H:%M') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center; padding:60px; color:#aaa;">No communications logged yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 {% if pagination.pages > 1 %}
-<div class="pagination" style="margin-top:24px;">
-  {% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}&status={{ current_status }}&channel={{ current_channel }}">←</a>{% endif %}
-  <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
-  {% if pagination.has_next %}<a href="?page={{ pagination.next_num }}&status={{ current_status }}&channel={{ current_channel }}">→</a>{% endif %}
+<div class="pagination" style="margin-top:24px; display:flex; justify-content:center; align-items:center; gap:16px;">
+  {% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}&status={{ current_status }}&channel={{ current_channel }}" class="btn btn--secondary" style="padding:6px 12px;">← Previous</a>{% endif %}
+  <span style="font-weight:600; font-size:0.9rem; color:#666;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+  {% if pagination.has_next %}<a href="?page={{ pagination.next_num }}&status={{ current_status }}&channel={{ current_channel }}" class="btn btn--secondary" style="padding:6px 12px;">Next →</a>{% endif %}
 </div>
 {% endif %}
+
+<!-- Send Individual SMS Modal -->
+<div id="smsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:32px; border-radius:16px; width:100%; max-width:500px; position:relative;">
+    <button onclick="document.getElementById('smsModal').style.display='none'" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:24px; font-weight:700;">Send New SMS</h2>
+    <form action="{{ url_for('admin.send_individual_sms') }}" method="POST">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Recipient Phone (e.g. 055xxxxxxx)</label>
+        <input type="text" name="phone" required class="form-control" placeholder="233...">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Message</label>
+        <textarea name="message" required class="form-control" rows="4" maxlength="160" placeholder="Type your message here..."></textarea>
+      </div>
+      <div style="padding:16px; background:#f8f9fa; border-radius:8px; margin-bottom:20px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:8px;">
+          <input type="checkbox" onchange="document.getElementById('schedField').style.display = this.checked ? 'block' : 'none'"> Schedule for later
+        </label>
+        <div id="schedField" style="display:none;">
+          <input type="text" name="schedule_time" class="form-control" placeholder="YYYY-MM-DD HH:MM">
+          <small style="color:#666;">Format: 2026-12-31 14:30</small>
+        </div>
+      </div>
+      <button type="submit" class="btn btn--primary" style="width:100%; padding:14px;">Send Message Now</button>
+    </form>
+  </div>
+</div>
+
+<!-- Bulk Marketing Modal -->
+<div id="bulkModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:32px; border-radius:16px; width:100%; max-width:500px; position:relative;">
+    <button onclick="document.getElementById('bulkModal').style.display='none'" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:8px; font-weight:700;">Bulk SMS Campaign</h2>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:24px;">Blast a message to your entire audience.</p>
+    <form action="{{ url_for('admin.send_bulk_sms') }}" method="POST">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Target Audience</label>
+        <select name="target" class="form-control">
+          <option value="all">All Registered Customers</option>
+          <option value="newsletter">Newsletter Subscribers (with Phone)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:24px;">
+        <label>Message</label>
+        <textarea name="message" required class="form-control" rows="5" maxlength="160" placeholder="Hello Slidein GH customers! We have a sale..."></textarea>
+      </div>
+      <div style="background:#fff3cd; color:#856404; padding:12px; border-radius:8px; margin-bottom:24px; font-size:0.8rem;">
+        ⚠️ <strong>Note:</strong> Bulk messages can take a few minutes to process and may incur significant SMS charges.
+      </div>
+      <button type="submit" class="btn btn--secondary" style="width:100%; padding:14px;">Launch Campaign</button>
+    </form>
+  </div>
+</div>
+
+<style>
+.filter-chip {
+  padding: 6px 14px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  color: #666;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.filter-chip:hover {
+  background: #eee;
+  color: #333;
+}
+.filter-chip.active {
+  background: #333;
+  color: white;
+  border-color: #333;
+}
+.admin-table th {
+  background: #fcfcfc;
+  font-weight: 700;
+  color: #444;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px;
+}
+.badge--scheduled { background: #e8f0fe; color: #1967d2; }
+</style>
 {% endblock %}

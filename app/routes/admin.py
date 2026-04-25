@@ -957,6 +957,88 @@ def notifications():
                            counts=counts)
 
 
+@admin_bp.route('/notifications/send-sms', methods=['POST'])
+@admin_required
+def send_individual_sms():
+    phone = request.form.get('phone', '').strip()
+    message = request.form.get('message', '').strip()
+    if not phone or not message:
+        flash('Phone and message are required.', 'danger')
+        return redirect(request.referrer or url_for('admin.notifications'))
+    
+    from app.notifications import send_sms
+    try:
+        send_sms(phone, message)
+        flash(f'SMS sent to {phone}.', 'success')
+    except Exception as e:
+        flash(f'Failed to send SMS: {e}', 'danger')
+    
+    return redirect(request.referrer or url_for('admin.notifications'))
+
+
+@admin_bp.route('/notifications/bulk-sms', methods=['POST'])
+@admin_required
+def send_bulk_sms():
+    target = request.form.get('target', 'all')  # all | newsletter
+    message = request.form.get('message', '').strip()
+    if not message:
+        flash('Message content is required.', 'danger')
+        return redirect(request.referrer or url_for('admin.notifications'))
+    
+    from app.notifications import bulk_send_sms
+    from app.models import Customer, NewsletterSignup
+    
+    recipients = []
+    if target == 'all':
+        customers = Customer.query.filter(Customer.phone != None).all()
+        recipients = [c.phone for c in customers]
+    elif target == 'newsletter':
+        # This assumes newsletter signups have phone numbers, but they usually only have emails.
+        # Let's just use all customers for now as a safe default.
+        customers = Customer.query.filter(Customer.phone != None).all()
+        recipients = [c.phone for c in customers]
+    
+    if not recipients:
+        flash('No recipients found.', 'warning')
+        return redirect(request.referrer or url_for('admin.notifications'))
+        
+    try:
+        count = bulk_send_sms(message, recipients=recipients)
+        flash(f'Bulk SMS campaign started for {count} recipients.', 'success')
+    except Exception as e:
+        flash(f'Failed to start bulk SMS: {e}', 'danger')
+        
+    return redirect(request.referrer or url_for('admin.notifications'))
+
+
+@admin_bp.route('/notifications/schedule-sms', methods=['POST'])
+@admin_required
+def schedule_sms_route():
+    phone = request.form.get('phone', '').strip()
+    message = request.form.get('message', '').strip()
+    schedule_time = request.form.get('schedule_time', '').strip() # Expecting YYYY-MM-DD HH:MM
+    
+    if not phone or not message or not schedule_time:
+        flash('All fields are required for scheduling.', 'danger')
+        return redirect(request.referrer or url_for('admin.notifications'))
+    
+    # Simple validation of schedule_time format
+    try:
+        datetime.strptime(schedule_time, '%Y-%m-%d %H:%M')
+    except ValueError:
+        flash('Invalid date format. Use YYYY-MM-DD HH:MM', 'danger')
+        return redirect(request.referrer or url_for('admin.notifications'))
+
+    from app.notifications import schedule_sms
+    try:
+        schedule_sms(phone, message, schedule_time)
+        flash(f'SMS scheduled for {phone} at {schedule_time}.', 'success')
+    except Exception as e:
+        flash(f'Failed to schedule SMS: {e}', 'danger')
+        
+    return redirect(request.referrer or url_for('admin.notifications'))
+
+
 # ── Newsletter subscribers ────────────────────────────────────────────────────
 
 @admin_bp.route('/newsletter')

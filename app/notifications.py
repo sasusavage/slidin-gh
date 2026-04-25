@@ -162,6 +162,37 @@ def send_status_update(order):
                    order_id=order.id)
 
 
+def schedule_sms(phone, message, schedule_time, order_id=None):
+    """
+    schedule_time: string "YYYY-MM-DD HH:MM"
+    """
+    phone = _normalize_ghana_phone(phone)
+    provider = os.environ.get('SMS_PROVIDER', '').lower()
+    entry = NotificationLog(
+        channel='sms', recipient=phone, message=message,
+        order_id=order_id, provider=provider or 'stub', status='scheduled',
+    )
+    db.session.add(entry)
+    try:
+        if provider == 'vynfy':
+            result = _send_scheduled_vynfy(phone, message, schedule_time)
+            if isinstance(result, dict) and 'data' in result:
+                entry.provider_message_id = result['data'].get('job_id')
+            entry.status = 'scheduled'
+        else:
+            log.info(f'[SMS Schedule stub] → {phone} at {schedule_time}: {message}')
+            entry.status = 'logged'
+    except Exception as e:
+        entry.status = 'failed'
+        entry.error = str(e)[:500]
+        log.exception('SMS scheduling failed')
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return entry
+
+
 def _send_via_vynfy(phone, message):
     key = os.environ.get('VYNFY_API_KEY')
     sender = os.environ.get('VYNFY_SENDER_ID', 'SlideinGH')[:11]
@@ -188,6 +219,35 @@ def _send_via_vynfy(phone, message):
     resp = requests.post(url, headers=headers, json=payload, timeout=15)
     if not resp.ok:
         raise Exception(f'Vynfy error: {resp.text}')
+    return resp.json()
+
+
+def _send_scheduled_vynfy(phone, message, schedule_time):
+    key = os.environ.get('VYNFY_API_KEY')
+    sender = os.environ.get('VYNFY_SENDER_ID', 'SlideinGH')[:11]
+    if not key:
+        raise ValueError('VYNFY_API_KEY not set')
+    
+    clean_phone = phone.replace('+', '')
+    if clean_phone.startswith('0'):
+        clean_phone = '233' + clean_phone[1:]
+    elif not clean_phone.startswith('233'):
+        clean_phone = '233' + clean_phone
+
+    url = "https://sms.vynfy.com/schedule/v1/send"
+    headers = {
+        "X-API-Key": key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "message": message,
+        "recipients": [clean_phone],
+        "schedule_time": schedule_time,
+        "sender": sender
+    }
+    resp = requests.post(url, headers=headers, json=payload, timeout=15)
+    if not resp.ok:
+        raise Exception(f'Vynfy scheduling error: {resp.text}')
     return resp.json()
 
 
