@@ -12,7 +12,8 @@ status='logged' so you can see exactly what would have been sent.
 import os
 import logging
 from app import db
-from app.models import NotificationLog, SiteSettings
+from app.models import NotificationLog, SiteSettings, Customer
+import requests
 
 log = logging.getLogger(__name__)
 
@@ -43,8 +44,11 @@ def send_sms(phone, message, order_id=None):
         if provider == 'hubtel':
             _send_via_hubtel(phone, message)
             entry.status = 'sent'
-        elif provider == 'mnotify':
-            _send_via_mnotify(phone, message)
+        elif provider == 'vynfy':
+            result = _send_via_vynfy(phone, message)
+            # Vynfy returns job_id in data
+            if isinstance(result, dict) and 'data' in result:
+                entry.provider_message_id = result['data'].get('job_id')
             entry.status = 'sent'
         else:
             log.info(f'[SMS stub] → {phone}: {message}')
@@ -98,6 +102,25 @@ def _site_url():
     return os.environ.get('SITE_URL', '').rstrip('/')
 
 
+def bulk_send_sms(message, recipients=None):
+    """
+    Send SMS to all customers or a specific list.
+    recipients: list of phone numbers. If None, sends to ALL customers.
+    """
+    from app import db
+    if recipients is None:
+        # Get all customers with valid phone numbers
+        customers = Customer.query.filter(Customer.phone != None).all()
+        recipients = [c.phone for c in customers]
+    
+    if not recipients:
+        return 0
+        
+    for phone in recipients:
+        send_sms(phone, message)
+    return len(recipients)
+
+
 def send_order_confirmation(order):
     """Called right after an order is placed."""
     name = _site_name()
@@ -139,14 +162,41 @@ def send_status_update(order):
                    order_id=order.id)
 
 
-# ── Provider stubs (implement when you pick one) ──────────────────────────────
+def _send_via_vynfy(phone, message):
+    key = os.environ.get('VYNFY_API_KEY')
+    sender = os.environ.get('VYNFY_SENDER_ID', 'SlideinGH')[:11]
+    if not key:
+        raise ValueError('VYNFY_API_KEY not set')
+    
+    # Vynfy needs 233... without +
+    clean_phone = phone.replace('+', '')
+    if clean_phone.startswith('0'):
+        clean_phone = '233' + clean_phone[1:]
+    elif not clean_phone.startswith('233'):
+        clean_phone = '233' + clean_phone
+
+    url = "https://sms.vynfy.com/api/v1/send"
+    headers = {
+        "X-API-Key": key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "message": message,
+        "recipients": [clean_phone],
+        "sender": sender
+    }
+    resp = requests.post(url, headers=headers, json=payload, timeout=15)
+    if not resp.ok:
+        raise Exception(f'Vynfy error: {resp.text}')
+    return resp.json()
+
 
 def _send_via_hubtel(phone, message):
-    raise NotImplementedError('Hubtel integration not wired — set SMS_PROVIDER= to leave in log mode.')
+    raise NotImplementedError('Hubtel integration not wired.')
 
 
 def _send_via_mnotify(phone, message):
-    raise NotImplementedError('mNotify integration not wired — set SMS_PROVIDER= to leave in log mode.')
+    raise NotImplementedError('mNotify integration not wired.')
 
 
 def _send_via_smtp(to, subject, body):
@@ -154,6 +204,21 @@ def _send_via_smtp(to, subject, body):
 
 
 # ── Telegram alerts ───────────────────────────────────────────────────────────
+
+def send_chat_action(action='typing'):
+    """Sends a chat action (typing, upload_photo, etc) to indicate the bot is working."""
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+    if not token or not chat_id:
+        return
+    try:
+        requests.post(
+            f'https://api.telegram.org/bot{token}/sendChatAction',
+            json={'chat_id': chat_id, 'action': action},
+            timeout=5,
+        )
+    except Exception:
+        pass
 
 import threading
 

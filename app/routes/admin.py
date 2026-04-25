@@ -1500,15 +1500,26 @@ def telegram_webhook():
     Only responds to messages from the configured TELEGRAM_CHAT_ID.
     """
     import os
+    from app.notifications import send_chat_action
+    
     data = request.get_json(silent=True) or {}
-    message = data.get('message') or data.get('edited_message') or {}
+    
+    # Handle both new and edited messages
+    is_edit = 'edited_message' in data
+    message = data.get('edited_message') or data.get('message') or {}
+    
     chat = message.get('chat', {})
     chat_id = str(chat.get('id', ''))
     text = (message.get('text') or '').strip()
+    msg_id = message.get('message_id')
+    reply_to = message.get('reply_to_message', {}).get('text', '')
 
     allowed_chat = os.environ.get('TELEGRAM_CHAT_ID', '')
     if not chat_id or not text or chat_id != allowed_chat:
         return jsonify({'ok': True})
+
+    # Show typing status immediately
+    send_chat_action('typing')
 
     # Handle special commands
     if text.startswith('/'):
@@ -1553,10 +1564,19 @@ def telegram_webhook():
     try:
         from app.ai_engine import chat as ai_chat
         history = _tg_histories.get(chat_id, [])
-        reply = ai_chat(current_app._get_current_object(), text, history=history)
+        
+        # Add reply context if any
+        prompt = text
+        if reply_to:
+            prompt = f"Context from previous message: \"{reply_to}\"\n\nUser Question: {text}"
+            
+        reply = ai_chat(current_app._get_current_object(), prompt, history=history)
+        
+        # Track history
         history.append({'role': 'user', 'content': text})
         history.append({'role': 'assistant', 'content': reply})
-        _tg_histories[chat_id] = history[-12:]  # keep last 6 exchanges
+        _tg_histories[chat_id] = history[-16:]  # keep last 8 exchanges
+        
         _reply_telegram(chat_id, reply)
     except Exception as e:
         _reply_telegram(chat_id, f'⚠️ AI error: {e}')

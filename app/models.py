@@ -461,6 +461,7 @@ class NotificationLog(db.Model):
     order_id = db.Column(db.String(36), db.ForeignKey('orders.id'))
     status = db.Column(db.String(20), default='queued')   # queued | logged | sent | failed
     provider = db.Column(db.String(30))
+    provider_message_id = db.Column(db.String(100))  # From Vynfy/Hubtel
     error = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

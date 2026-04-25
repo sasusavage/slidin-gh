@@ -21,10 +21,12 @@ def create_app(config_name=None):
     from app.routes.store import store_bp
     from app.routes.orders import orders_bp
     from app.routes.admin import admin_bp
+    from app.routes.webhooks import webhooks_bp
 
     app.register_blueprint(store_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(webhooks_bp)
 
     # Start background scheduler (low-stock alerts + daily AI report)
     if not app.config.get('TESTING'):

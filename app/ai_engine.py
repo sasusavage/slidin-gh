@@ -9,6 +9,152 @@ _cache = {}
 _CACHE_TTL = 600  # 10 minutes
 
 
+def _get_tools():
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": "send_sms_message",
+                "description": "Send an SMS message to one or more customers. Use this to send receipts, confirmations, or marketing messages.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string", "description": "The text of the SMS message."},
+                        "recipients": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of phone numbers. If empty/null, it will send to ALL customers (bulk)."
+                        }
+                    },
+                    "required": ["message"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_coupon",
+                "description": "Generate a new discount coupon code in the system.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {"type": "string", "description": "The coupon code (e.g. SLIDE10)."},
+                        "discount_type": {"type": "string", "enum": ["percentage", "fixed"], "description": "Type of discount."},
+                        "discount_value": {"type": "number", "description": "The value of the discount (e.g. 10 for 10% or 50 for GH₵50)."},
+                        "min_spend": {"type": "number", "description": "Minimum spend required to use the coupon."},
+                        "expiry_days": {"type": "integer", "description": "Number of days from now until the coupon expires."}
+                    },
+                    "required": ["code", "discount_type", "discount_value"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_customer_info",
+                "description": "Search for customer details by name or phone number.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "Name or phone number to search for."}
+                    },
+                    "required": ["query"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "check_detailed_inventory",
+                "description": "Check stock levels for specific products or all low-stock items including sizes and colors.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "product_name": {"type": "string", "description": "Optional product name to filter by."}
+                    }
+                }
+            }
+        }
+    ]
+
+
+def _execute_tool(app, func_name, args):
+    from app import db
+    from app.models import Customer, Product, ProductVariant, Coupon
+    from app.notifications import send_sms, bulk_send_sms
+    
+    try:
+        if func_name == "send_sms_message":
+            msg = args.get("message")
+            recs = args.get("recipients")
+            if not recs:
+                count = bulk_send_sms(msg)
+                return f"Bulk SMS sent to {count} customers."
+            else:
+                for r in recs:
+                    send_sms(r, msg)
+                return f"SMS sent to {len(recs)} recipients."
+                
+        elif func_name == "create_coupon":
+            code = args.get("code").upper()
+            dtype = args.get("discount_type")
+            val = args.get("discount_value")
+            min_s = args.get("min_spend", 0)
+            exp = args.get("expiry_days", 30)
+            
+            existing = CouponCode.query.filter_by(code=code).first()
+            if existing:
+                return f"Coupon {code} already exists."
+                
+            c = CouponCode(
+                code=code,
+                discount_type=dtype,
+                discount_value=val,
+                min_order_amount=min_s,
+                end_date=datetime.utcnow() + timedelta(days=exp),
+                is_active=True
+            )
+            db.session.add(c)
+            db.session.commit()
+            return f"Coupon {code} ({val} {dtype}) created successfully, expires in {exp} days."
+            
+        elif func_name == "get_customer_info":
+            q = args.get("query")
+            from sqlalchemy import or_
+            custs = Customer.query.filter(or_(
+                Customer.name.ilike(f"%{q}%"),
+                Customer.phone.ilike(f"%{q}%")
+            )).limit(5).all()
+            if not custs:
+                return "No customers found matching that query."
+            res = []
+            for c in custs:
+                res.append(f"Name: {c.name}, Phone: {c.phone}, Orders: {c.order_count}, Total Spent: GH₵{float(c.total_spent):,.2f}")
+            return "\n".join(res)
+            
+        elif func_name == "check_detailed_inventory":
+            pname = args.get("product_name")
+            query = ProductVariant.query.join(Product)
+            if pname:
+                query = query.filter(Product.name.ilike(f"%{pname}%"))
+            else:
+                query = query.filter(ProductVariant.quantity <= 5)
+            
+            variants = query.limit(20).all()
+            if not variants:
+                return "No matching inventory issues found."
+            lines = []
+            for v in variants:
+                lines.append(f"{v.product.name} ({v.size or 'N/A'}/{v.color or 'N/A'}): {v.quantity} in stock")
+            return "\n".join(lines)
+            
+    except Exception as e:
+        log.error(f"Tool execution error ({func_name}): {e}")
+        return f"Error executing tool: {str(e)}"
+    
+    return "Unknown tool"
+
+
 def _build_context(app):
     from app import db
     from app.models import Order, OrderItem, Product, ProductVariant, Customer, Expense, StockAdjustment
@@ -226,19 +372,53 @@ def chat(app, message, history=None):
 
     messages = [{'role': 'system', 'content': system}]
     if history:
-        messages.extend(history[-6:])  # last 3 exchanges
+        messages.extend(history[-10:])  # last 5 exchanges
     messages.append({'role': 'user', 'content': message})
 
+    tools = _get_tools()
+
     try:
+        # First turn: model decides whether to call a tool
         resp = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             messages=messages,
-            temperature=0.5,
-            max_tokens=700,
+            tools=tools,
+            tool_choice="auto",
+            temperature=0.4,
+            max_tokens=800,
         )
-        return resp.choices[0].message.content
+        
+        msg_obj = resp.choices[0].message
+        
+        # Check if model wants to call tools
+        if msg_obj.tool_calls:
+            messages.append(msg_obj)
+            
+            for tool_call in msg_obj.tool_calls:
+                func_name = tool_call.function.name
+                func_args = json.loads(tool_call.function.arguments)
+                
+                log.info(f"AI Tool Call: {func_name}({func_args})")
+                tool_result = _execute_tool(app, func_name, func_args)
+                
+                messages.append({
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": func_name,
+                    "content": tool_result,
+                })
+            
+            # Second turn: model responds with the tool results
+            final_resp = client.chat.completions.create(
+                model='llama-3.3-70b-versatile',
+                messages=messages,
+                temperature=0.4,
+            )
+            return final_resp.choices[0].message.content
+        
+        return msg_obj.content
     except Exception as e:
-        log.warning(f'AI chat error: {e}')
+        log.exception(f'AI chat error: {e}')
         return f'AI is temporarily unavailable. Please try again in a moment.'
 
 
