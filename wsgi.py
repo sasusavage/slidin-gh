@@ -23,6 +23,10 @@ with app.app_context():
 
 def _register_telegram_webhook():
     """Auto-register Telegram webhook on startup if SITE_URL is set."""
+    import time
+    import random
+    # Add jitter to avoid multiple workers hitting Telegram API at once
+    time.sleep(random.uniform(1, 5))
     site_url = os.environ.get('SITE_URL', '').rstrip('/')
     token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     if not site_url or not token:

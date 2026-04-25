@@ -80,7 +80,7 @@ def _get_tools():
 
 def _execute_tool(app, func_name, args):
     from app import db
-    from app.models import Customer, Product, ProductVariant, Coupon
+    from app.models import Customer, Product, ProductVariant, CouponCode
     from app.notifications import send_sms, bulk_send_sms
     
     try:
@@ -246,6 +246,7 @@ def get_context(app):
 
 def invalidate():
     _cache.clear()
+
 
 
 def _groq_client():
