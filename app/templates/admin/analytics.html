@@ -2,73 +2,261 @@
 {% block title %}Analytics{% endblock %}
 
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-  <h1 style="font-size:1.5rem;font-weight:700;">Analytics</h1>
-  <span style="font-size:0.7rem;color:#888;">Last 30 days</span>
-</div>
+<style>
+.an-kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:#000;border:1px solid #000;margin-bottom:32px;}
+.an-kpi__cell{background:#fff;padding:20px 22px;}
+.an-kpi__label{font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;}
+.an-kpi__value{font-size:1.8rem;font-weight:700;letter-spacing:-0.03em;line-height:1;}
+.an-kpi__sub{font-size:0.7rem;margin-top:6px;}
+.an-kpi__change--up{color:#059669;}
+.an-kpi__change--down{color:#dc2626;}
+.an-kpi__change--flat{color:#aaa;}
 
-<div class="dashboard-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;">
-  <div class="stat-card"><span class="stat-card__label">Revenue (30d)</span><span class="stat-card__value">{{ total_revenue|currency }}</span></div>
-  <div class="stat-card"><span class="stat-card__label">Orders (30d)</span><span class="stat-card__value">{{ total_orders }}</span></div>
-  <div class="stat-card"><span class="stat-card__label">Avg Order</span><span class="stat-card__value">{{ avg_order|currency }}</span></div>
-</div>
+.an-section{margin-bottom:40px;}
+.an-section__title{font-size:0.6rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#888;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;}
 
-<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;color:#333;">Revenue — Last 30 days</h2>
-<canvas id="chartRevenue" height="80"></canvas>
+.an-chart-wrap{background:#fff;border:1px solid #e5e7eb;padding:24px;border-radius:2px;position:relative;}
+.an-chart-wrap canvas{display:block;}
 
-<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin:40px 0 16px;color:#333;">Top Products</h2>
-<div style="overflow-x:auto;">
-<table class="admin-table">
-  <thead><tr><th>Product</th><th style="text-align:right;">Units</th><th style="text-align:right;">Revenue</th></tr></thead>
-  <tbody>
-  {% for p in top_products %}
-  <tr>
-    <td>{{ p.name }}</td>
-    <td style="text-align:right;">{{ p.units }}</td>
-    <td style="text-align:right;">{{ p.revenue|currency }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="3" style="text-align:center;color:#aaa;padding:32px;">No sales yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-</div>
+.an-grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:768px){.an-grid2{grid-template-columns:1fr;}}
+.an-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+@media(max-width:900px){.an-grid3{grid-template-columns:1fr 1fr;}}
+@media(max-width:540px){.an-grid3{grid-template-columns:1fr;}}
 
-<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin:40px 0 16px;color:#333;">Orders by Status</h2>
-<div style="display:flex;gap:10px;flex-wrap:wrap;">
-  {% for s in status_breakdown %}
-  <div style="border:1px solid var(--grey-2);padding:12px 18px;min-width:120px;">
-    <p style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:#888;margin-bottom:4px;">{{ s.status }}</p>
-    <p style="font-size:1.4rem;font-weight:700;">{{ s.count }}</p>
+/* top products bar rows */
+.tp-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;}
+.tp-row:last-child{border:none;}
+.tp-rank{font-size:0.68rem;font-weight:700;color:#bbb;width:18px;flex-shrink:0;}
+.tp-name{font-size:0.82rem;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tp-bar-wrap{width:120px;height:6px;background:#f0f0f0;border-radius:3px;flex-shrink:0;}
+.tp-bar{height:6px;background:#111;border-radius:3px;transition:width .4s;}
+.tp-val{font-size:0.72rem;font-weight:700;width:90px;text-align:right;flex-shrink:0;}
+
+/* status pills */
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;font-size:0.72rem;font-weight:600;}
+
+/* dow bar */
+.dow-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+.dow-bar-outer{width:100%;background:#f0f0f0;border-radius:4px;height:80px;display:flex;align-items:flex-end;}
+.dow-bar-inner{width:100%;background:#111;border-radius:4px 4px 0 0;transition:height .4s;}
+.dow-label{font-size:0.6rem;font-weight:600;color:#888;text-transform:uppercase;}
+.dow-val{font-size:0.58rem;color:#aaa;}
+</style>
+
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="admin-page-title" style="margin-bottom:2px;">Analytics</h1>
+    <p style="font-size:0.72rem;color:#999;">Last 30 days vs previous 30 days</p>
   </div>
-  {% endfor %}
+  <a href="{{ url_for('admin.eod_report') }}" class="btn btn--outline" style="padding:9px 18px;font-size:0.7rem;text-decoration:none;">End of Day Report →</a>
+</div>
+
+<!-- KPI Row -->
+<div class="an-kpi">
+  <div class="an-kpi__cell">
+    <p class="an-kpi__label">Revenue (30d)</p>
+    <p class="an-kpi__value">{{ total_revenue|currency }}</p>
+    <p class="an-kpi__sub {% if rev_change >= 0 %}an-kpi__change--up{% elif rev_change < -1 %}an-kpi__change--down{% else %}an-kpi__change--flat{% endif %}">
+      {% if rev_change >= 0 %}▲{% else %}▼{% endif %} {{ '%.1f'|format(rev_change|abs) }}% vs prev 30d
+    </p>
+  </div>
+  <div class="an-kpi__cell">
+    <p class="an-kpi__label">Orders (30d)</p>
+    <p class="an-kpi__value">{{ total_orders }}</p>
+    <p class="an-kpi__sub {% if orders_change >= 0 %}an-kpi__change--up{% elif orders_change < -1 %}an-kpi__change--down{% else %}an-kpi__change--flat{% endif %}">
+      {% if orders_change >= 0 %}▲{% else %}▼{% endif %} {{ '%.1f'|format(orders_change|abs) }}% vs prev 30d
+    </p>
+  </div>
+  <div class="an-kpi__cell">
+    <p class="an-kpi__label">Avg Order Value</p>
+    <p class="an-kpi__value">{{ avg_order|currency }}</p>
+    <p class="an-kpi__sub an-kpi__change--flat">per completed order</p>
+  </div>
+  <div class="an-kpi__cell">
+    <p class="an-kpi__label">Best Day Revenue</p>
+    {% set best = daily|max(attribute='revenue') %}
+    <p class="an-kpi__value">{{ best.revenue|currency }}</p>
+    <p class="an-kpi__sub an-kpi__change--flat">{{ best.date }}</p>
+  </div>
+</div>
+
+<!-- Revenue Chart -->
+<div class="an-section">
+  <p class="an-section__title">Revenue & Orders — Daily (30 Days)</p>
+  <div class="an-chart-wrap" style="height:260px;">
+    <canvas id="chartRevenue"></canvas>
+  </div>
+</div>
+
+<!-- Two col: top products + status breakdown -->
+<div class="an-grid2 an-section">
+  <!-- Top Products -->
+  <div>
+    <p class="an-section__title">Top Products (All Time)</p>
+    <div class="an-chart-wrap" style="padding:16px 20px;">
+      {% if top_products %}
+        {% set max_units = top_products[0].units or 1 %}
+        {% for p in top_products %}
+        <div class="tp-row">
+          <span class="tp-rank">{{ loop.index }}</span>
+          <span class="tp-name" title="{{ p.name }}">{{ p.name }}</span>
+          <div class="tp-bar-wrap"><div class="tp-bar" style="width:{{ (p.units / max_units * 100)|round(0) }}%"></div></div>
+          <span class="tp-val">{{ p.revenue|currency }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="text-align:center;color:#aaa;padding:40px 0;font-size:0.82rem;">No sales data yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Order Status Breakdown -->
+  <div>
+    <p class="an-section__title">Orders by Status (All Time)</p>
+    <div class="an-chart-wrap" style="height:280px;">
+      <canvas id="chartStatus"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Two col: day of week + gender -->
+<div class="an-grid2 an-section">
+  <!-- Day of Week Revenue -->
+  <div>
+    <p class="an-section__title">Revenue by Day of Week</p>
+    <div class="an-chart-wrap">
+      {% set max_dow = dow_totals|max or 1 %}
+      <div style="display:flex;gap:6px;align-items:flex-end;padding:0 8px;">
+        {% for i in range(7) %}
+        <div class="dow-col">
+          <div class="dow-bar-outer">
+            <div class="dow-bar-inner" style="height:{{ (dow_totals[i] / max_dow * 100)|round(0) }}%;"></div>
+          </div>
+          <span class="dow-label">{{ dow_labels[i] }}</span>
+          <span class="dow-val">{{ dow_totals[i]|currency }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Gender Breakdown -->
+  <div>
+    <p class="an-section__title">Units Sold by Gender</p>
+    <div class="an-chart-wrap" style="height:220px;">
+      <canvas id="chartGender"></canvas>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const daily = {{ daily|tojson }};
-const labels = daily.map(d => d.date.slice(5));
-const revenueData = daily.map(d => d.revenue);
+var daily = {{ daily|tojson }};
+var labels = daily.map(function(d){ return d.date.slice(5); });
+var revData = daily.map(function(d){ return d.revenue; });
+var ordData = daily.map(function(d){ return d.orders; });
 
+// Revenue + Orders dual-axis
 new Chart(document.getElementById('chartRevenue'), {
-  type: 'line',
   data: {
     labels: labels,
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Orders',
+        data: ordData,
+        backgroundColor: 'rgba(0,0,0,0.08)',
+        yAxisID: 'y2',
+        order: 2,
+      },
+      {
+        type: 'line',
+        label: 'Revenue (GH₵)',
+        data: revData,
+        borderColor: '#000',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        yAxisID: 'y1',
+        order: 1,
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            if(ctx.dataset.label.includes('Revenue'))
+              return 'Revenue: GH₵' + parseFloat(ctx.raw).toLocaleString('en-GH', {minimumFractionDigits:2});
+            return 'Orders: ' + ctx.raw;
+          }
+        }
+      }
+    },
+    scales: {
+      y1: { beginAtZero: true, position: 'left', ticks: { font:{size:10}, callback: v => 'GH₵'+v.toLocaleString() } },
+      y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { font:{size:10} } },
+    }
+  }
+});
+
+// Status doughnut
+var statusData = {{ status_breakdown|tojson }};
+new Chart(document.getElementById('chartStatus'), {
+  type: 'doughnut',
+  data: {
+    labels: statusData.map(function(s){ return s.status; }),
     datasets: [{
-      label: 'Revenue (GH₵)',
-      data: revenueData,
-      borderColor: '#000',
-      backgroundColor: 'rgba(0,0,0,0.06)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
+      data: statusData.map(function(s){ return s.count; }),
+      backgroundColor: ['#111','#4ade80','#f59e0b','#f87171','#60a5fa','#a78bfa'],
+      borderWidth: 2,
+      borderColor: '#fff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font:{size:11}, padding:12, boxWidth:12 } },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+            return ctx.label + ': ' + ctx.raw + ' (' + Math.round(ctx.raw/total*100) + '%)';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Gender bar
+var genderData = {{ gender_data|tojson }};
+new Chart(document.getElementById('chartGender'), {
+  type: 'bar',
+  data: {
+    labels: genderData.map(function(g){ return g.gender; }),
+    datasets: [{
+      label: 'Units Sold',
+      data: genderData.map(function(g){ return g.units; }),
+      backgroundColor: ['#111','#555','#aaa','#ddd'],
+      borderRadius: 3,
     }]
   },
   options: {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
-    scales: { y: { beginAtZero: true } }
+    scales: { y: { beginAtZero: true, ticks: { font:{size:10} } }, x: { ticks: { font:{size:11} } } }
   }
 });
 </script>

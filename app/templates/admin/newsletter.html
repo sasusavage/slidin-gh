@@ -2,31 +2,70 @@
 {% block title %}Newsletter Subscribers{% endblock %}
 
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-  <h1 style="font-size:1.5rem;font-weight:700;">Newsletter Subscribers</h1>
-  <span style="font-size:0.75rem;color:#888;">{{ signups|length }} total</span>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="admin-page-title" style="margin-bottom:2px;">Newsletter Subscribers</h1>
+    <p style="font-size:0.72rem;color:#999;">Customers who signed up for new drop notifications</p>
+  </div>
 </div>
 
-<div style="overflow-x:auto;">
-<table class="admin-table">
-  <thead><tr><th>Email</th><th>Source</th><th>Signed up</th></tr></thead>
-  <tbody>
-  {% for s in signups %}
-  <tr>
-    <td>{{ s.email }}</td>
-    <td>{{ s.source }}</td>
-    <td>{{ s.created_at.strftime('%b %d, %Y') }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="3" style="text-align:center;color:#aaa;padding:32px;">No signups yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<!-- Stat bar -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:#000;border:1px solid #000;margin-bottom:32px;">
+  <div style="background:#fff;padding:18px 20px;">
+    <p style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Total Subscribers</p>
+    <p style="font-size:1.8rem;font-weight:700;">{{ signups|length }}</p>
+  </div>
+  <div style="background:#fff;padding:18px 20px;">
+    <p style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">This Month</p>
+    {% set this_month = signups|selectattr('created_at')|list|length %}
+    <p style="font-size:1.8rem;font-weight:700;">
+      {% set now_m = now().month if now is defined else '' %}
+      {% set count_m = namespace(v=0) %}
+      {% for s in signups %}{% if s.created_at.month == s.created_at.month %}{% set count_m.v = count_m.v + 0 %}{% endif %}{% endfor %}
+      —
+    </p>
+  </div>
+  <div style="background:#fff;padding:18px 20px;">
+    <p style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Sources</p>
+    {% set sources = signups|map(attribute='source')|unique|list %}
+    <p style="font-size:1.8rem;font-weight:700;">{{ sources|length }}</p>
+    <p style="font-size:0.68rem;color:#aaa;margin-top:4px;">{{ sources|join(', ') if sources else '—' }}</p>
+  </div>
 </div>
 
 {% if signups %}
-<p style="margin-top:16px;font-size:0.72rem;color:#666;">
-  Tip: export via the database or copy/paste into your email tool.
+<div style="background:#fff;border:1px solid #e5e7eb;overflow:hidden;">
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+    <thead>
+      <tr style="border-bottom:2px solid #000;">
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Email</th>
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Source</th>
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Signed Up</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in signups %}
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:11px 16px;font-weight:500;">{{ s.email }}</td>
+      <td style="padding:11px 16px;">
+        <span style="background:#f0f0f0;padding:2px 8px;font-size:0.68rem;border-radius:20px;">{{ s.source or 'website' }}</span>
+      </td>
+      <td style="padding:11px 16px;color:#888;">{{ s.created_at.strftime('%d %b %Y') }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+<p style="margin-top:12px;font-size:0.7rem;color:#aaa;">
+  Copy the emails above into your email tool (Mailchimp, Brevo, etc.) to send campaigns.
 </p>
+{% else %}
+<div style="text-align:center;padding:64px 24px;border:1px solid #e5e7eb;background:#fff;">
+  <p style="font-size:2rem;margin-bottom:12px;">📭</p>
+  <p style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">No subscribers yet</p>
+  <p style="font-size:0.78rem;color:#aaa;">The newsletter signup form on your store will populate this list.</p>
+</div>
 {% endif %}
 {% endblock %}

@@ -2,34 +2,82 @@
 {% block title %}Stock Alert Signups{% endblock %}
 
 {% block content %}
-<h1 style="font-size:1.5rem;font-weight:700;margin-bottom:8px;">Back-in-Stock Alerts</h1>
-<p style="font-size:0.75rem;color:#888;margin-bottom:24px;">
-  Customers waiting to be notified. Once you restock, flip the variant quantity in Inventory and these will
-  show which numbers/emails to text/email.
-</p>
-
-<div style="overflow-x:auto;">
-<table class="admin-table">
-  <thead><tr>
-    <th>Product</th><th>Variant</th><th>Phone</th><th>Email</th><th>Requested</th>
-  </tr></thead>
-  <tbody>
-  {% for s in signups %}
-  <tr>
-    <td>{{ s.product.name if s.product else '—' }}</td>
-    <td>
-      {% if s.variant %}
-        {{ s.variant.size or '' }} {{ s.variant.color or '' }}
-      {% else %}Any{% endif %}
-    </td>
-    <td>{{ s.phone or '—' }}</td>
-    <td>{{ s.email or '—' }}</td>
-    <td>{{ s.created_at.strftime('%b %d, %Y') }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="5" style="text-align:center;color:#aaa;padding:32px;">No pending alerts.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="admin-page-title" style="margin-bottom:2px;">Back-in-Stock Alerts</h1>
+    <p style="font-size:0.72rem;color:#999;">Customers waiting for restocks — contact them when you top up inventory</p>
+  </div>
+  <a href="{{ url_for('admin.inventory') }}" class="btn btn--outline" style="padding:9px 18px;font-size:0.7rem;text-decoration:none;">Manage Inventory →</a>
 </div>
+
+<!-- Stat bar -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:#000;border:1px solid #000;margin-bottom:32px;">
+  <div style="background:#fff;padding:18px 20px;">
+    <p style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Total Waiting</p>
+    <p style="font-size:1.8rem;font-weight:700;">{{ signups|length }}</p>
+  </div>
+  <div style="background:#fff;padding:18px 20px;">
+    <p style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Unique Products</p>
+    <p style="font-size:1.8rem;font-weight:700;">{{ signups|map(attribute='product_id')|unique|list|length }}</p>
+  </div>
+  <div style="background:#fff;padding:18px 20px;">
+    <p style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">With Phone</p>
+    <p style="font-size:1.8rem;font-weight:700;">{{ signups|selectattr('phone')|list|length }}</p>
+  </div>
+</div>
+
+{% if signups %}
+<div style="background:#fff;border:1px solid #e5e7eb;overflow:hidden;">
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+    <thead>
+      <tr style="border-bottom:2px solid #000;">
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Product</th>
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Variant</th>
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Phone</th>
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Email</th>
+        <th style="padding:10px 16px;text-align:left;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;">Requested</th>
+        <th style="padding:10px 16px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in signups %}
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:11px 16px;font-weight:600;">
+        {% if s.product %}
+        <a href="{{ url_for('admin.product_edit', product_id=s.product_id) }}" style="color:#000;">{{ s.product.name }}</a>
+        {% else %}—{% endif %}
+      </td>
+      <td style="padding:11px 16px;color:#555;">
+        {% if s.variant %}
+          {% if s.variant.size %}<span style="background:#f0f0f0;padding:2px 7px;font-size:0.68rem;border-radius:3px;margin-right:4px;">{{ s.variant.size }}</span>{% endif %}
+          {% if s.variant.color %}<span style="background:{{ s.variant.color_hex or '#eee' }};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;border:1px solid #ddd;vertical-align:middle;"></span>{{ s.variant.color }}{% endif %}
+        {% else %}<span style="color:#aaa;">Any</span>{% endif %}
+      </td>
+      <td style="padding:11px 16px;">
+        {% if s.phone %}
+        <a href="tel:{{ s.phone }}" style="color:#000;font-weight:500;">{{ s.phone }}</a>
+        {% else %}<span style="color:#ccc;">—</span>{% endif %}
+      </td>
+      <td style="padding:11px 16px;color:#666;">{{ s.email or '—' }}</td>
+      <td style="padding:11px 16px;color:#888;">{{ s.created_at.strftime('%d %b %Y') }}</td>
+      <td style="padding:11px 16px;">
+        {% if s.product %}
+        <a href="{{ url_for('admin.inventory') }}?q={{ s.product.name|urlencode }}"
+           style="font-size:0.68rem;color:#000;text-decoration:underline;white-space:nowrap;">Restock →</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% else %}
+<div style="text-align:center;padding:64px 24px;border:1px solid #e5e7eb;background:#fff;">
+  <p style="font-size:2rem;margin-bottom:12px;">🔔</p>
+  <p style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">No pending alerts</p>
+  <p style="font-size:0.78rem;color:#aaa;">When customers tap "Notify Me" on a sold-out product, they appear here.</p>
+</div>
+{% endif %}
 {% endblock %}

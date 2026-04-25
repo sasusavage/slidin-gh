@@ -15,7 +15,7 @@
 </div>
 
 <!-- KPI row -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#000;margin-bottom:32px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:#000;border:1px solid #000;margin-bottom:32px;">
   <div style="background:#fff;padding:20px;">
     <p style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Total Orders</p>
     <p style="font-size:2rem;font-weight:700;">{{ total_orders }}</p>
@@ -35,7 +35,7 @@
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;">
 
   <!-- Payment breakdown -->
   <div style="border:1px solid #e0e0e0;padding:24px;">

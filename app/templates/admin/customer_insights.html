@@ -2,34 +2,194 @@
 {% block title %}Customer Insights{% endblock %}
 
 {% block content %}
-<h1 style="font-size:1.5rem;font-weight:700;margin-bottom:24px;">Customer Insights</h1>
+<style>
+.ci-kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:#000;border:1px solid #000;margin-bottom:32px;}
+.ci-kpi__cell{background:#fff;padding:18px 20px;}
+.ci-kpi__label{font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:6px;}
+.ci-kpi__value{font-size:1.7rem;font-weight:700;letter-spacing:-0.03em;line-height:1;}
+.ci-kpi__sub{font-size:0.68rem;color:#aaa;margin-top:5px;}
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;">
-  <div class="stat-card"><span class="stat-card__label">Total Customers</span><span class="stat-card__value">{{ total }}</span></div>
-  <div class="stat-card"><span class="stat-card__label">Repeat Buyers</span><span class="stat-card__value">{{ repeat }}</span></div>
-  <div class="stat-card"><span class="stat-card__label">Repeat Rate</span><span class="stat-card__value">{{ '%.1f'|format(repeat_rate) }}%</span></div>
-  <div class="stat-card"><span class="stat-card__label">Avg LTV</span><span class="stat-card__value">{{ ltv|currency }}</span></div>
-  <div class="stat-card"><span class="stat-card__label">New (30d)</span><span class="stat-card__value">{{ new_30 }}</span></div>
-  <div class="stat-card"><span class="stat-card__label">Active (30d)</span><span class="stat-card__value">{{ active_30 }}</span></div>
+.ci-section{margin-bottom:36px;}
+.ci-section__title{font-size:0.6rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#888;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;}
+
+.ci-grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:768px){.ci-grid2{grid-template-columns:1fr;}}
+
+.ci-box{background:#fff;border:1px solid #e5e7eb;padding:20px;}
+
+/* customer table */
+.ci-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+.ci-table th{font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;font-weight:600;padding:8px 12px;border-bottom:2px solid #000;text-align:left;}
+.ci-table td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.ci-table tr:last-child td{border:none;}
+.ci-table tr:hover td{background:#fafafa;}
+
+.ltv-bar-wrap{width:100%;background:#f0f0f0;border-radius:2px;height:5px;margin-top:4px;}
+.ltv-bar{height:5px;background:#111;border-radius:2px;}
+
+/* spend bucket bars */
+.bucket-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.bucket-label{font-size:0.72rem;font-weight:500;width:80px;flex-shrink:0;}
+.bucket-bar-outer{flex:1;background:#f0f0f0;border-radius:3px;height:8px;}
+.bucket-bar-inner{height:8px;background:#111;border-radius:3px;}
+.bucket-count{font-size:0.72rem;font-weight:700;width:32px;text-align:right;flex-shrink:0;}
+
+.repeat-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+</style>
+
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="admin-page-title" style="margin-bottom:2px;">Customer Insights</h1>
+    <p style="font-size:0.72rem;color:#999;">Lifetime customer data + 30-day activity</p>
+  </div>
+  <a href="{{ url_for('admin.customers') }}" class="btn btn--outline" style="padding:9px 18px;font-size:0.7rem;text-decoration:none;">All Customers →</a>
 </div>
 
-<h2 style="font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;color:#333;">Top Customers by Lifetime Value</h2>
-<div style="overflow-x:auto;">
-<table class="admin-table">
-  <thead><tr><th>Name</th><th>Phone</th><th style="text-align:right;">Orders</th><th style="text-align:right;">Total Spent</th><th></th></tr></thead>
-  <tbody>
-  {% for c in top_customers %}
-  <tr>
-    <td>{{ c.full_name }}</td>
-    <td>{{ c.phone }}</td>
-    <td style="text-align:right;">{{ c.order_count }}</td>
-    <td style="text-align:right;">{{ c.total_spent|currency }}</td>
-    <td><a href="{{ url_for('admin.customer_detail', customer_id=c.id) }}" style="font-size:0.7rem;">View</a></td>
-  </tr>
-  {% else %}
-  <tr><td colspan="5" style="text-align:center;color:#aaa;padding:32px;">No customers yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<!-- KPI Row -->
+<div class="ci-kpi">
+  <div class="ci-kpi__cell">
+    <p class="ci-kpi__label">Total Customers</p>
+    <p class="ci-kpi__value">{{ total }}</p>
+    <p class="ci-kpi__sub">all time</p>
+  </div>
+  <div class="ci-kpi__cell">
+    <p class="ci-kpi__label">New (30d)</p>
+    <p class="ci-kpi__value">{{ new_30 }}</p>
+    <p class="ci-kpi__sub">joined this month</p>
+  </div>
+  <div class="ci-kpi__cell">
+    <p class="ci-kpi__label">Active (30d)</p>
+    <p class="ci-kpi__value">{{ active_30 }}</p>
+    <p class="ci-kpi__sub">placed an order</p>
+  </div>
+  <div class="ci-kpi__cell">
+    <p class="ci-kpi__label">Repeat Buyers</p>
+    <p class="ci-kpi__value">{{ repeat }}</p>
+    <p class="ci-kpi__sub">{{ '%.1f'|format(repeat_rate) }}% repeat rate</p>
+  </div>
+  <div class="ci-kpi__cell">
+    <p class="ci-kpi__label">Avg LTV</p>
+    <p class="ci-kpi__value">{{ ltv|currency }}</p>
+    <p class="ci-kpi__sub">lifetime value</p>
+  </div>
 </div>
+
+<!-- Charts row -->
+<div class="ci-grid2 ci-section">
+  <!-- Monthly new customers bar chart -->
+  <div>
+    <p class="ci-section__title">New Customers — Last 6 Months</p>
+    <div class="ci-box" style="height:220px;">
+      <canvas id="chartMonthly"></canvas>
+    </div>
+  </div>
+
+  <!-- Repeat rate ring + spend buckets -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <div>
+      <p class="ci-section__title">Repeat Buyer Rate</p>
+      <div class="ci-box" style="height:100px;display:flex;align-items:center;gap:24px;">
+        <!-- Big percentage -->
+        <div style="font-size:2.8rem;font-weight:700;letter-spacing:-0.04em;line-height:1;flex-shrink:0;">
+          {{ '%.0f'|format(repeat_rate) }}<span style="font-size:1rem;color:#aaa;">%</span>
+        </div>
+        <div>
+          <p style="font-size:0.75rem;font-weight:600;margin-bottom:4px;">{{ repeat }} of {{ total }} customers</p>
+          <p style="font-size:0.7rem;color:#aaa;">have ordered more than once</p>
+          {% if repeat_rate >= 30 %}
+          <p style="font-size:0.68rem;color:#059669;margin-top:6px;">✓ Strong loyalty</p>
+          {% elif repeat_rate >= 15 %}
+          <p style="font-size:0.68rem;color:#f59e0b;margin-top:6px;">→ Room to grow loyalty</p>
+          {% else %}
+          <p style="font-size:0.68rem;color:#dc2626;margin-top:6px;">⚠ Focus on retention</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ci-section__title">Spend Distribution</p>
+      <div class="ci-box">
+        {% set bucket_max = buckets.values()|max or 1 %}
+        {% for label, count in buckets.items() %}
+        <div class="bucket-row">
+          <span class="bucket-label">GH₵{{ label }}</span>
+          <div class="bucket-bar-outer"><div class="bucket-bar-inner" style="width:{{ (count / bucket_max * 100)|round(0) }}%"></div></div>
+          <span class="bucket-count">{{ count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top customers table -->
+<div class="ci-section">
+  <p class="ci-section__title">Top Customers by Lifetime Value</p>
+  <div class="ci-box" style="padding:0;overflow:hidden;">
+    <div style="overflow-x:auto;">
+    <table class="ci-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th style="text-align:right;">Orders</th>
+          <th style="text-align:right;">Total Spent</th>
+          <th>Spend Bar</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in top_customers %}
+      <tr>
+        <td style="color:#ccc;font-size:0.72rem;">{{ loop.index }}</td>
+        <td style="font-weight:600;">{{ c.full_name }}</td>
+        <td style="color:#666;">{{ c.phone or '—' }}</td>
+        <td style="text-align:right;font-weight:600;">{{ c.order_count }}</td>
+        <td style="text-align:right;font-weight:700;">{{ c.total_spent|currency }}</td>
+        <td style="min-width:100px;">
+          <div class="ltv-bar-wrap">
+            <div class="ltv-bar" style="width:{{ ((c.total_spent|float) / max_spent * 100)|round(0) }}%"></div>
+          </div>
+        </td>
+        <td>
+          <a href="{{ url_for('admin.customer_detail', customer_id=c.id) }}"
+             style="font-size:0.7rem;color:#000;text-decoration:underline;white-space:nowrap;">View →</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;color:#aaa;padding:48px;font-size:0.82rem;">No customers yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+var monthly = {{ monthly_new|tojson }};
+new Chart(document.getElementById('chartMonthly'), {
+  type: 'bar',
+  data: {
+    labels: monthly.map(function(m){ return m.month; }),
+    datasets: [{
+      label: 'New Customers',
+      data: monthly.map(function(m){ return m.count; }),
+      backgroundColor: '#111',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { font:{size:10}, stepSize:1 } },
+      x: { ticks: { font:{size:11} } }
+    }
+  }
+});
+</script>
 {% endblock %}

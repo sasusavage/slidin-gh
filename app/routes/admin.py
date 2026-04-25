@@ -786,12 +786,13 @@ def review_delete(review_id):
 def analytics():
     today = datetime.utcnow().date()
     start = today - timedelta(days=29)
+    prev_start = today - timedelta(days=59)
 
     # Daily revenue & orders (last 30 days)
     daily = {}
     for n in range(30):
         d = start + timedelta(days=n)
-        daily[d.isoformat()] = {'date': d.isoformat(), 'revenue': 0, 'orders': 0}
+        daily[d.isoformat()] = {'date': d.isoformat(), 'revenue': 0.0, 'orders': 0}
 
     rows = db.session.query(
         func.date(Order.created_at).label('d'),
@@ -809,7 +810,26 @@ def analytics():
             daily[key]['revenue'] = float(rev or 0)
     daily_list = sorted(daily.values(), key=lambda r: r['date'])
 
-    # Top products (by units sold)
+    # Totals current period
+    total_revenue = sum(r['revenue'] for r in daily_list)
+    total_orders  = sum(r['orders']  for r in daily_list)
+    avg_order = (total_revenue / total_orders) if total_orders else 0
+
+    # Previous 30d for comparison
+    prev_rev = db.session.query(func.sum(Order.total)).filter(
+        func.date(Order.created_at) >= prev_start,
+        func.date(Order.created_at) < start,
+        Order.status != 'cancelled'
+    ).scalar() or 0
+    prev_orders = db.session.query(func.count(Order.id)).filter(
+        func.date(Order.created_at) >= prev_start,
+        func.date(Order.created_at) < start,
+        Order.status != 'cancelled'
+    ).scalar() or 0
+    rev_change = ((total_revenue - float(prev_rev)) / float(prev_rev) * 100) if prev_rev else 0
+    orders_change = ((total_orders - int(prev_orders)) / int(prev_orders) * 100) if prev_orders else 0
+
+    # Top products (by units sold, all time)
     top_rows = db.session.query(
         OrderItem.product_name,
         func.sum(OrderItem.quantity).label('units'),
@@ -819,27 +839,43 @@ def analytics():
     ).group_by(OrderItem.product_name).order_by(
         func.sum(OrderItem.quantity).desc()
     ).limit(10).all()
-    top_products = [{'name': r[0], 'units': int(r[1] or 0),
-                     'revenue': float(r[2] or 0)} for r in top_rows]
+    top_products = [{'name': r[0], 'units': int(r[1] or 0), 'revenue': float(r[2] or 0)} for r in top_rows]
 
     # Status breakdown
-    status_rows = db.session.query(
-        Order.status, func.count(Order.id)
-    ).group_by(Order.status).all()
+    status_rows = db.session.query(Order.status, func.count(Order.id)).group_by(Order.status).all()
     status_breakdown = [{'status': s, 'count': int(n)} for s, n in status_rows]
+    total_all_orders = sum(s['count'] for s in status_breakdown) or 1
 
-    # Totals
-    total_revenue = sum(r['revenue'] for r in daily_list)
-    total_orders = sum(r['orders'] for r in daily_list)
-    avg_order = (total_revenue / total_orders) if total_orders else 0
+    # Gender breakdown (from product.gender via OrderItem → product lookup)
+    gender_rows = db.session.query(
+        Product.gender, func.sum(OrderItem.quantity)
+    ).join(OrderItem, OrderItem.product_id == Product.id
+    ).join(Order, OrderItem.order_id == Order.id
+    ).filter(Order.status != 'cancelled'
+    ).group_by(Product.gender).all()
+    gender_data = [{'gender': g or 'Unspecified', 'units': int(u or 0)} for g, u in gender_rows]
+
+    # Revenue by day of week (0=Mon)
+    dow_totals = [0.0] * 7
+    for row in daily_list:
+        from datetime import date as _date
+        d_obj = _date.fromisoformat(row['date'])
+        dow_totals[d_obj.weekday()] += row['revenue']
+    dow_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
     return render_template('admin/analytics.html',
                            daily=daily_list,
                            top_products=top_products,
                            status_breakdown=status_breakdown,
+                           total_all_orders=total_all_orders,
                            total_revenue=total_revenue,
                            total_orders=total_orders,
-                           avg_order=avg_order)
+                           avg_order=avg_order,
+                           rev_change=rev_change,
+                           orders_change=orders_change,
+                           gender_data=gender_data,
+                           dow_labels=dow_labels,
+                           dow_totals=dow_totals)
 
 
 # ── Customer Insights ─────────────────────────────────────────────────────────
@@ -852,6 +888,7 @@ def customer_insights():
     repeat = sum(1 for c in customers if c.order_count > 1)
     repeat_rate = (repeat / total * 100) if total else 0
     ltv = (sum(float(c.total_spent or 0) for c in customers) / total) if total else 0
+    max_spent = max((float(c.total_spent or 0) for c in customers), default=0) or 1
 
     top = sorted(customers, key=lambda c: float(c.total_spent or 0), reverse=True)[:15]
 
@@ -862,11 +899,35 @@ def customer_insights():
     active_30 = db.session.query(Order.customer_id).filter(
         Order.created_at >= start).distinct().count()
 
+    # Spend distribution buckets
+    buckets = {'0–50': 0, '50–200': 0, '200–500': 0, '500+': 0}
+    for c in customers:
+        v = float(c.total_spent or 0)
+        if v < 50:      buckets['0–50'] += 1
+        elif v < 200:   buckets['50–200'] += 1
+        elif v < 500:   buckets['200–500'] += 1
+        else:           buckets['500+'] += 1
+
+    # Monthly new customers (last 6 months)
+    monthly_new = []
+    for i in range(5, -1, -1):
+        m_start = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+        if i == 0:
+            m_end = today
+        else:
+            m_end = (m_start + timedelta(days=32)).replace(day=1)
+        count = Customer.query.filter(
+            Customer.created_at >= m_start,
+            Customer.created_at < m_end
+        ).count()
+        monthly_new.append({'month': m_start.strftime('%b'), 'count': count})
+
     return render_template('admin/customer_insights.html',
                            total=total, repeat=repeat,
                            repeat_rate=repeat_rate, ltv=ltv,
-                           top_customers=top,
-                           new_30=new_30, active_30=active_30)
+                           top_customers=top, max_spent=max_spent,
+                           new_30=new_30, active_30=active_30,
+                           buckets=buckets, monthly_new=monthly_new)
 
 
 # ── Notifications Log ─────────────────────────────────────────────────────────
