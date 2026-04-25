@@ -59,11 +59,7 @@
           {% endif %}
         </td>
         <td style="padding:16px;">
-          <span style="display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; 
-            {% if n.status == 'sent' or n.status == 'delivered' %} background:#e6f4ea; color:#1e7e34;
-            {% elif n.status == 'failed' %} background:#fce8e6; color:#d93025;
-            {% elif n.status == 'scheduled' %} background:#e8f0fe; color:#1967d2;
-            {% else %} background:#f1f3f4; color:#5f6368; {% endif %}">
+          <span class="status-badge status--{{ n.status }}">
             {{ n.status|upper }}
           </span>
         </td>
@@ -169,6 +165,17 @@
   letter-spacing: 0.5px;
   padding: 16px;
 }
-.badge--scheduled { background: #e8f0fe; color: #1967d2; }
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f3f4;
+  color: #5f6368;
+}
+.status--sent, .status--delivered { background: #e6f4ea; color: #1e7e34; }
+.status--failed { background: #fce8e6; color: #d93025; }
+.status--scheduled { background: #e8f0fe; color: #1967d2; }
 </style>
 {% endblock %}
